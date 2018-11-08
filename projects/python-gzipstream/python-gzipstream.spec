@@ -1,6 +1,4 @@
-%if ! (0%{?fedora} || 0%{?rhel} > 5)
-%{!?python_sitelib: %define python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%endif
+%{!?python2_sitelib: %define python2_sitelib %{python_sitelib}}
 
 %if 0%{?fedora} || 0%{?suse_version} > 1320
 %global build_py3   1
@@ -8,7 +6,7 @@
 
 Summary: Streaming zlib (gzip) support for python
 Name: python-gzipstream
-Version: 2.9.0
+Version: 2.9.3
 Release: 1%{?dist}
 URL:        https://github.com/spacewalkproject/spacewalk/wiki/Projects_python-gzipstream
 Source0:    https://github.com/spacewalkproject/spacewalk/archive/python-gzipstream-%{version}.tar.gz
@@ -50,7 +48,7 @@ mkdir ../py3
 cp -a . ../py3
 
 %build
-%{__python} setup.py build
+%{__python}2 setup.py build
 %if 0%{?build_py3}
 cd ../py3
 %{__python3} setup.py build
@@ -58,7 +56,7 @@ cd ../py3
 %endif
 
 %install
-%{__python} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
+%{__python}2 setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT
 %if 0%{?build_py3}
 cd ../py3
 %{__python3} setup.py install -O1 --skip-build --root $RPM_BUILD_ROOT --prefix %{_usr}
@@ -66,7 +64,7 @@ cd ../py3
 %endif
 
 %files -n python2-gzipstream
-%{python_sitelib}/*
+%{python2_sitelib}/*
 %doc html
 %license LICENSE
 
@@ -79,6 +77,13 @@ cd ../py3
 %endif
 
 %changelog
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.3-1
+- use explicit version of python
+
+* Mon Jul 09 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.1-1
+- get rid of #/usr/bin/env shebang
+- Bumping package versions for 2.9.
+
 * Mon Feb 12 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.6-1
 - mark license for python3 subpackage
 - remove empty section

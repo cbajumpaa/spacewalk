@@ -13,6 +13,10 @@
 %global include_selinux_package 1
 %endif
 
+%if 0%{?mageia}
+%global include_selinux_package 0
+%endif
+
 %if 0%{?fedora} || 0%{?rhel} >= 8
 %global build_py3   1
 %global default_py3 1
@@ -27,7 +31,7 @@
 Name: osad
 Summary: Open Source Architecture Daemon
 License: GPLv2
-Version: 5.11.102
+Version: 5.11.106
 Release: 1%{?dist}
 URL:     https://github.com/spacewalkproject/spacewalk
 Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -219,7 +223,7 @@ SELinux policy module supporting osa-dispatcher.
 cp prog.init.SUSE prog.init
 %endif
 %if 0%{?fedora} || (0%{?rhel} && 0%{?rhel} > 5)
-sed -i 's@^#!/usr/bin/python$@#!/usr/bin/python -s@' invocation.py
+sed -i 's@^#!/usr/bin/python2$@#!/usr/bin/python2 -s@' invocation.py
 %endif
 
 %build
@@ -248,7 +252,7 @@ make -f Makefile.osad install PREFIX=$RPM_BUILD_ROOT ROOT=%{rhnroot} INITDIR=%{_
 %if 0%{?build_py3}
 make -f Makefile.osad install PREFIX=$RPM_BUILD_ROOT ROOT=%{rhnroot} INITDIR=%{_initrddir} \
         PYTHONPATH=%{python3_sitelib} PYTHONVERSION=%{python3_version}
-sed -i 's|#!/usr/bin/python|#!/usr/bin/python3|' $RPM_BUILD_ROOT/usr/sbin/osad-%{python3_version}
+sed -i 's|#!/usr/bin/python2|#!/usr/bin/python3|' $RPM_BUILD_ROOT/usr/sbin/osad-%{python3_version}
 %endif
 
 %define default_suffix %{?default_py3:-%{python3_version}}%{!?default_py3:-%{python_version}}
@@ -436,6 +440,7 @@ rpm -ql osa-dispatcher | xargs -n 1 /sbin/restorecon -rvi {}
 %endif
 %doc LICENSE
 %config(noreplace) %attr(644,root,root) %{_sysconfdir}/logrotate.d/osad
+%attr(644,root,root) %{_sysconfdir}/logrotate.d/osad
 %ghost %attr(600,root,root) %{_var}/log/osad
 %if 0%{?suse_version}
 # provide directories not owned by any package during build
@@ -532,6 +537,18 @@ rpm -ql osa-dispatcher | xargs -n 1 /sbin/restorecon -rvi {}
 %endif
 
 %changelog
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 5.11.106-1
+- use explicit version of python
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 5.11.105-1
+- disable selinux on mageia
+
+* Wed Jul 25 2018 Tomas Kasparek <tkasparek@redhat.com> 5.11.104-1
+- remove TLSv1 hardcode and let client/server negotiate
+
+* Mon Jul 09 2018 Laurence Rochfort <tkasparek@redhat.com>
+- 1589668 - Fix logrotate.d/osad file mode
+
 * Tue Mar 20 2018 Tomas Kasparek <tkasparek@redhat.com> 5.11.102-1
 - remove osad files when packaging only for python3
 - osa-dispatcher is dependent on spacewalk-backend which is in python2

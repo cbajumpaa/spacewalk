@@ -15,7 +15,7 @@
 Name: spacewalk-certs-tools
 Summary: Spacewalk SSL Key/Cert Tool
 License: GPLv2
-Version: 2.9.0
+Version: 2.9.1
 Release: 1%{?dist}
 URL:      https://github.com/spacewalkproject/spacewalk
 Source0:  https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -81,7 +81,7 @@ make -f Makefile.certs install PREFIX=$RPM_BUILD_ROOT ROOT=%{rhnroot} \
     PYTHONPATH=%{python_sitelib} PYTHONVERSION=%{python_version} \
     MANDIR=%{_mandir} PUB_BOOTSTRAP_DIR=%{pub_bootstrap_dir}
 %if 0%{?build_py3}
-sed -i 's|#!/usr/bin/python|#!/usr/bin/python3|' rhn-ssl-tool rhn-bootstrap
+sed -i 's|#!/usr/bin/python2|#!/usr/bin/python3|' rhn-ssl-tool rhn-bootstrap
 make -f Makefile.certs install PREFIX=$RPM_BUILD_ROOT ROOT=%{rhnroot} \
     PYTHONPATH=%{python3_sitelib} PYTHONVERSION=%{python3_version} \
     MANDIR=%{_mandir} PUB_BOOTSTRAP_DIR=%{pub_bootstrap_dir}
@@ -123,6 +123,10 @@ ln -s rhn-bootstrap%{default_suffix} $RPM_BUILD_ROOT%{_bindir}/rhn-bootstrap
 %endif
 
 %changelog
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.1-1
+- use explicit version of python
+- Bumping package versions for 2.9.
+
 * Wed Mar 21 2018 Jiri Dostal <jdostal@redhat.com> 2.8.8-1
 - Updating copyright years for 2018
 

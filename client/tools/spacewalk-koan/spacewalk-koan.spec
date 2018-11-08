@@ -1,4 +1,4 @@
-%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8 || 0%{?mageia}
 %global build_py3   1
 %global default_py3 1
 %endif
@@ -11,7 +11,7 @@
 
 Summary: Support package for spacewalk koan interaction
 Name: spacewalk-koan
-Version: 2.9.0
+Version: 2.9.1
 Release: 1%{?dist}
 License: GPLv2
 Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -33,8 +33,8 @@ Support package for spacewalk koan interaction.
 %package -n python2-%{name}
 Summary: Support package for spacewalk koan interaction
 %{?python_provide:%python_provide python2-%{name}}
-BuildRequires:  python
-Requires:       python
+BuildRequires:  python2
+Requires:       python2
 %if 0%{?suse_version}
 # provide directories for filelist check in OBS
 BuildRequires: rhn-client-tools
@@ -71,11 +71,11 @@ make -f Makefile.spacewalk-koan install PREFIX=$RPM_BUILD_ROOT ROOT=%{python3_si
     MANDIR=%{_mandir}
 %endif
 
-%if 0%{?suse_version}
+%if 0%{?suse_version} && 0%{?build_py2}
 %py_compile -O %{buildroot}/%{python_sitelib}
-%if 0%{?build_py3}
-%py3_compile -O %{buildroot}/%{python3_sitelib}
 %endif
+%if 0%{?suse_version} && 0%{?build_py3}
+%py3_compile -O %{buildroot}/%{python3_sitelib}
 %endif
 
 
@@ -104,6 +104,11 @@ make -f Makefile.spacewalk-koan install PREFIX=$RPM_BUILD_ROOT ROOT=%{python3_si
 %endif
 
 %changelog
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.1-1
+- fixed build on mageia
+- fixed py_compile on opensuse 15
+- Bumping package versions for 2.9.
+
 * Tue Mar 20 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.8-1
 - don't build python2 subpackages on systems with default python3
 

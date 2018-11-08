@@ -17,7 +17,7 @@
 %endif
 
 Name:       spacewalk-branding
-Version:    2.9.0
+Version:    2.9.2
 Release:    1%{?dist}
 Summary:    Spacewalk branding data
 
@@ -84,7 +84,6 @@ cp -pR img %{buildroot}/%{wwwdocroot}/
 # Appplication expects two favicon's for some reason, copy it so there's just
 # one in source:
 cp -p img/favicon.ico %{buildroot}/%{wwwdocroot}/
-cp -pR setup  %{buildroot}%{_datadir}/spacewalk/
 cp -pR java-branding.jar %{buildroot}%{_datadir}/rhn/lib/
 ln -s %{_datadir}/rhn/lib/java-branding.jar %{buildroot}%{tomcat_path}/webapps/rhn/WEB-INF/lib/java-branding.jar
 cp -p conf/rhn_docs.conf %{buildroot}/%{_prefix}/share/rhn/config-defaults/rhn_docs.conf
@@ -120,6 +119,13 @@ rm -rf %{buildroot}
 %{wwwdocroot}/css/*.less
 
 %changelog
+* Mon Jul 30 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.2-1
+- remove spacewalk-public.cert also from specfile
+
+* Mon Jul 30 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.1-1
+- remove entitlement certificate as it's not used anymore
+- Bumping package versions for 2.9.
+
 * Fri Feb 09 2018 Michael Mraka <michael.mraka@redhat.com> 2.8.5-1
 - removed %%%%defattr from specfile
 - removed Group from specfile

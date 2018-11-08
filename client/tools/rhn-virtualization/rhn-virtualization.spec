@@ -2,7 +2,7 @@
 %define rhn_conf_dir %{_sysconfdir}/sysconfig/rhn
 %define cron_dir %{_sysconfdir}/cron.d
 
-%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8 || 0%{?mageia}
 %global build_py3   1
 %global default_py3 1
 %endif
@@ -15,7 +15,7 @@
 
 Name:           rhn-virtualization 
 Summary:        RHN/Spacewalk action support for virtualization
-Version:        5.4.72
+Version:        5.4.76
 Release:        1%{?dist}
 
 License:        GPLv2
@@ -129,13 +129,11 @@ make -f Makefile.rhn-virtualization DESTDIR=$RPM_BUILD_ROOT PKGDIR0=%{_initrddir
                 $RPM_BUILD_ROOT/%{cron_dir}/rhn-virtualization.cron
 %endif
 
-%if 0%{?fedora} || (0%{?rhel} && 0%{?rhel} > 5) || 0%{?suse_version}
-find $RPM_BUILD_ROOT -name "localvdsm*" -exec rm -f '{}' ';'
-%endif
-
 %if 0%{?suse_version}
 rm -f $RPM_BUILD_ROOT/%{_initrddir}/rhn-virtualization-host
+%if 0%{?build_py2}
 %py_compile -O %{buildroot}/%{python_sitelib}
+%endif
 %if 0%{?build_py3}
 %py3_compile -O %{buildroot}/%{python3_sitelib}
 %endif
@@ -149,7 +147,7 @@ rm -f $RPM_BUILD_ROOT/%{_initrddir}/rhn-virtualization-host
 if [ -d /proc/xen ]; then
     # xen kernel is running
     # change the default template to the xen version
-    sed -i 's@^IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/studio-kvm-template.xml@IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/studio-xen-template.xml@' /etc/sysconfig/rhn/image.cfg
+    sed -i 's@^IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/kvm-template.xml@IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/xen-template.xml@' /etc/sysconfig/rhn/image.cfg
 fi
 
 %else
@@ -160,7 +158,7 @@ fi
 if [ -d /proc/xen ]; then
     # xen kernel is running
     # change the default template to the xen version
-    sed -i 's@^IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/studio-kvm-template.xml@IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/studio-xen-template.xml@' /etc/sysconfig/rhn/image.cfg
+    sed -i 's@^IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/kvm-template.xml@IMAGE_CFG_TEMPLATE=/etc/sysconfig/rhn/xen-template.xml@' /etc/sysconfig/rhn/image.cfg
 fi
 
 %preun host
@@ -216,7 +214,7 @@ fi
 %dir %{rhn_conf_dir}/virt
 %dir %{rhn_conf_dir}/virt/auto
 %config(noreplace) %attr(644,root,root) %{cron_dir}/rhn-virtualization.cron
-%{rhn_conf_dir}/studio-*-template.xml
+%{rhn_conf_dir}/*-template.xml
 %config(noreplace) %{rhn_conf_dir}/image.cfg
 %doc LICENSE
 
@@ -235,9 +233,6 @@ fi
 %{python_sitelib}/virtualization/support.py*
 %{python_sitelib}/rhn/actions/virt.py*
 %{python_sitelib}/rhn/actions/image.py*
-%if (0%{?rhel} && 0%{?rhel} < 6)
-%{python_sitelib}/virtualization/localvdsm.py*
-%endif
 %if 0%{?suse_version}
 %dir %{python_sitelib}/rhn
 %dir %{python_sitelib}/rhn/actions
@@ -280,6 +275,19 @@ fi
 %endif
 
 %changelog
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 5.4.76-1
+- removed old RHEL5 localvdsm which breaks build on mageia
+
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 5.4.75-1
+- fix build on opensuse
+- fix build on mageia
+
+* Mon Jul 09 2018 Tomas Kasparek <tkasparek@redhat.com> 5.4.74-1
+- get rid of #!/usr/bin/env .* shebang
+
+* Tue Jun 19 2018 Tomas Kasparek <tkasparek@redhat.com> 5.4.73-1
+- Rewrite of the client code (image.py)
+
 * Tue Mar 20 2018 Tomas Kasparek <tkasparek@redhat.com> 5.4.72-1
 - don't build python2 subpackages on systems with default python3
 

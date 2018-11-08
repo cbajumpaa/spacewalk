@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 #
 #
 
 from distutils.core import setup
 
 setup(name = "gzipstream",
-      version = "2.8.6",
+      version = "2.9.3",
       description = "Streaming zlib (gzip) support for python",
       long_description = """\
 A streaming gzip handler.

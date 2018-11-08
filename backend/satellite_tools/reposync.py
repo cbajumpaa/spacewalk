@@ -83,13 +83,20 @@ def send_mail(sync_type="Repo"):
 class KSDirParser:
     file_blacklist = ["release-notes/"]
 
-    def __init__(self, dir_html, additional_blacklist=None):
+    def __init__(self):
         self.dir_content = []
 
-        if additional_blacklist is None:
-            additional_blacklist = []
-        elif not isinstance(additional_blacklist, type([])):
-            additional_blacklist = [additional_blacklist]
+    def get_content(self):
+        return self.dir_content
+
+
+class KSDirHtmlParser(KSDirParser):
+    def __init__(self, plug, dir_name):
+        KSDirParser.__init__(self)
+
+        dir_html = plug.get_file(dir_name)
+        if dir_html is None:
+            return
 
         for s in (m.group(1) for m in re.finditer(r'(?i)<a href="(.+?)"', dir_html)):
             if not (re.match(r'/', s) or re.search(r'\?', s) or re.search(r'\.\.', s) or re.match(r'[a-zA-Z]+:', s) or
@@ -99,11 +106,24 @@ class KSDirParser:
                 else:
                     file_type = 'FILE'
 
-                if s not in (self.file_blacklist + additional_blacklist):
+                if s not in (self.file_blacklist):
                     self.dir_content.append({'name': s, 'type': file_type})
 
-    def get_content(self):
-        return self.dir_content
+
+class KSDirLocalParser(KSDirParser):
+    def __init__(self, base_dir, dir_name):
+        KSDirParser.__init__(self)
+        dir_path = os.path.join(base_dir, dir_name)
+        for dir_item in os.listdir(dir_path):
+            if not dir_item.endswith(".rpm"):
+                dir_item_path = os.path.join(dir_path, dir_item)
+                if os.path.isdir(dir_item_path):
+                    file_type = 'DIR'
+                    dir_item = "%s/" % dir_item
+                else:
+                    file_type = 'FILE'
+                if dir_item not in self.file_blacklist:
+                    self.dir_content.append({'name': dir_item, 'type': file_type})
 
 
 class TreeInfoError(Exception):
@@ -139,6 +159,7 @@ class TreeInfoParser(object):
                 for item in self.parser.items(section_name):
                     if item[0] == 'family':
                         return item[1]
+        return None
 
     def get_major_version(self):
         for section_name in self.parser.sections():
@@ -146,6 +167,7 @@ class TreeInfoParser(object):
                 for item in self.parser.items(section_name):
                     if item[0] == 'version':
                         return item[1].split('.')[0]
+        return None
 
     def get_package_dir(self):
         for section_name in self.parser.sections():
@@ -153,6 +175,7 @@ class TreeInfoParser(object):
                 for item in self.parser.items(section_name):
                     if item[0] == 'packagedir':
                         return item[1]
+        return None
 
     def get_addons(self):
         addons_dirs = []
@@ -312,8 +335,9 @@ class RepoSync(object):
     def __init__(self, channel_label, repo_type=None, url=None, fail=False,
                  filters=None, no_errata=False, sync_kickstart=False, latest=False,
                  metadata_only=False, strict=0, excluded_urls=None, no_packages=False,
-                 log_dir="reposync", log_level=None, force_kickstart=False, force_all_errata=False,
-                 check_ssl_dates=False, force_null_org_content=False, show_packages_only=False):
+                 log_dir="reposync", log_level=None, debug=False, force_kickstart=False,
+                 force_all_errata=False, check_ssl_dates=False, force_null_org_content=False,
+                 show_packages_only=False):
         self.regen = False
         self.fail = fail
         self.filters = filters or []
@@ -332,17 +356,21 @@ class RepoSync(object):
         rhnSQL.initDB()
 
         # setup logging
-        log_filename = channel_label + '.log'
-        log_path = default_log_location + log_dir + '/' + log_filename
+        if debug:
+            log_path = 'stdout'
+        else:
+            log_filename = channel_label + '.log'
+            log_path = default_log_location + log_dir + '/' + log_filename
         if log_level is None:
             log_level = 0
         CFG.set('DEBUG', log_level)
         rhnLog.initLOG(log_path, log_level)
         # os.fchown isn't in 2.4 :/
-        if isSUSE():
-            os.system("chgrp www " + log_path)
-        else:
-            os.system("chgrp apache " + log_path)
+        if not debug:
+            if isSUSE():
+                os.system("chgrp www " + log_path)
+            else:
+                os.system("chgrp apache " + log_path)
 
         log2disk(0, "Command: %s" % str(sys.argv))
         log2disk(0, "Sync of channel started.")
@@ -434,6 +462,8 @@ class RepoSync(object):
                 if url.startswith("uln://"):
                     repo_type = "uln"
 
+                is_non_local_repo = (url.find("file:/") < 0)
+
                 repo_plugin = self.load_plugin(repo_type)
 
                 if repo_label:
@@ -484,7 +514,7 @@ class RepoSync(object):
                         self.import_groups(plugin)
                         if repo_type == "yum":
                             self.import_modules(plugin)
-                        ret = self.import_packages(plugin, repo_id, url)
+                        ret = self.import_packages(plugin, repo_id, is_non_local_repo)
                         failed_packages += ret
 
                     if not self.no_errata:
@@ -493,7 +523,7 @@ class RepoSync(object):
                     # only for repos obtained from the DB
                     if self.sync_kickstart and repo_label:
                         try:
-                            self.import_kickstart(plugin, repo_label)
+                            self.import_kickstart(plugin, repo_label, is_non_local_repo)
                         except:
                             rhnSQL.rollback()
                             raise
@@ -583,6 +613,7 @@ class RepoSync(object):
             self.upload_updates(notices)
 
     def copy_metadata_file(self, filename, comps_type, relative_dir):
+        old_checksum = None
         basename = os.path.basename(filename)
         log(0, '')
         log(0, "  Importing %s file %s." % (comps_type, basename))
@@ -596,11 +627,21 @@ class RepoSync(object):
             if basename.endswith(suffix):
                 abspath = abspath.rstrip(suffix)
                 relativepath = relativepath.rstrip(suffix)
+
+        h = rhnSQL.prepare("""select relative_filename
+                                from rhnChannelComps
+                               where channel_id = :cid
+                                 and comps_type_id = (select id from rhnCompsType where label = :ctype)""")
+        if h.execute(cid=self.channel['id'], ctype=comps_type):
+            old_checksum = getFileChecksum('sha256', os.path.join(CFG.MOUNT_POINT, h.fetchone()[0]))
+
         src = fileutils.decompress_open(filename)
         dst = open(abspath, "w")
         shutil.copyfileobj(src, dst)
         dst.close()
         src.close()
+        if old_checksum and old_checksum != getFileChecksum('sha256', abspath):
+            self.regen = True
         # update or insert
         hu = rhnSQL.prepare("""update rhnChannelComps
                                   set relative_filename = :relpath,
@@ -645,7 +686,7 @@ class RepoSync(object):
         e['product'] = notice['release'] or 'Unknown'
         e['description'] = notice['description']
         e['synopsis'] = notice['title'] or notice['update_id']
-        if notice['type'] == 'security' and 'severity' in notice:
+        if notice['type'] == 'security' and 'severity' in notice and notice['severity'].lower() != 'none':
             e['security_impact'] = notice['severity']
         if notice['type'] == 'security' and not e['synopsis'].startswith(notice['severity'] + ': '):
             e['synopsis'] = notice['severity'] + ': ' + e['synopsis']
@@ -800,14 +841,16 @@ class RepoSync(object):
     def upload_updates(self, notices):
         batch = []
 
-        channel_advisory_names = self.list_errata()
+        advisory_update_date = self.list_update_dates()
         for notice in notices:
             notice = self.fix_notice(notice)
 
             # Save advisory names from all repositories
             self.all_errata.add(notice['update_id'])
 
-            if not self.force_all_errata and notice['update_id'] in channel_advisory_names:
+            update_date = advisory_update_date.get(notice['update_id'], '')
+            notice_updated = self._to_db_date(notice['updated'])
+            if not self.force_all_errata and notice_updated == update_date:
                 continue
 
             # pylint: disable=W0703
@@ -829,7 +872,7 @@ class RepoSync(object):
         elif notices:
             log(0, "    No new errata to sync.")
 
-    def import_packages(self, plug, source_id, url):
+    def import_packages(self, plug, source_id, is_non_local_repo):
         failed_packages = 0
         if (not self.filters) and source_id:
             h = rhnSQL.prepare("""
@@ -901,8 +944,6 @@ class RepoSync(object):
         else:
             log(0, "    Packages already synced:      %5d" % (num_passed - num_to_process))
             log(0, "    Packages to sync:             %5d" % num_to_process)
-
-        is_non_local_repo = (url.find("file:/") < 0)
 
         downloader = ThreadedDownloader()
         to_download_count = 0
@@ -1206,6 +1247,8 @@ class RepoSync(object):
             ret = datetime.fromtimestamp(float(date)).isoformat(' ')
         else:
             # we expect to get ISO formated date
+            if len(date) == 10: # YYYY-MM-DD
+                date += " 00:00:00"
             ret = date
         return ret[:19]  # return 1st 19 letters of date, therefore preventing ORA-01830 caused by fractions of seconds
 
@@ -1271,6 +1314,19 @@ class RepoSync(object):
 
         return ret
 
+    def list_update_dates(self):
+        """List update_date for advisories in channel"""
+        h = rhnSQL.prepare("""select e.advisory_name,
+                                     e.update_date
+            from rhnChannelErrata ce
+            inner join rhnErrata e on e.id = ce.errata_id
+            where ce.channel_id = :cid
+        """)
+        h.execute(cid=self.channel['id'])
+        advisories = dict((row['advisory_name'], row['update_date'].strftime("%Y-%m-%d %H:%M:%S"))
+                          for row in h.fetchall_dict() or [])
+        return advisories
+
     def list_errata(self):
         """List advisory names present in channel"""
         h = rhnSQL.prepare("""select e.advisory_name
@@ -1282,7 +1338,7 @@ class RepoSync(object):
         advisories = [row['advisory_name'] for row in h.fetchall_dict() or []]
         return advisories
 
-    def import_kickstart(self, plug, repo_label):
+    def import_kickstart(self, plug, repo_label, is_non_local_repo):
         log(0, '')
         log(0, '  Importing kickstarts.')
         ks_path = 'rhn/kickstart/'
@@ -1380,11 +1436,10 @@ class RepoSync(object):
         log(0, "    Gathering all files in kickstart repository...")
         while dirs_queue:
             cur_dir_name = dirs_queue.pop(0)
-            cur_dir_html = plug.get_file(cur_dir_name)
-            if cur_dir_html is None:
-                continue
-
-            parser = KSDirParser(cur_dir_html)
+            if is_non_local_repo:
+                parser = KSDirHtmlParser(plug, cur_dir_name)
+            else:
+                parser = KSDirLocalParser(plug.repo.urls[0].replace("file://", ""), cur_dir_name)
             for ks_file in parser.get_content():
                 repo_path = cur_dir_name + ks_file['name']
                 if ks_file['type'] == 'DIR':

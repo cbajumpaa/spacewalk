@@ -1,4 +1,4 @@
-%if 0%{?fedora} || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?rhel} >= 8 || 0%{?mageia} >= 6 || 0%{?suse_version} >= 1500
 %global build_py3   1
 %global default_py3 1
 %endif
@@ -11,7 +11,7 @@
 
 Summary: DNF plugin for Spacewalk
 Name: dnf-plugin-spacewalk
-Version: 2.9.0
+Version: 2.9.5
 Release: 1%{?dist}
 License: GPLv2
 Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -19,15 +19,14 @@ URL:     https://github.com/spacewalkproject/spacewalk
 BuildArch: noarch
 
 Requires: %{pythonX}-%{name} = %{version}-%{release}
-%if 0%{?fedora} && 0%{?fedora} <= 25
-Requires: dnf >= 0.5.3
-%else
 Requires: dnf >= 2.0.0
-%endif
 Requires: dnf-plugins-core
 Requires: librepo >= 1.7.15
 %if 0%{?fedora}
 Obsoletes: yum-rhn-plugin < 2.7
+%endif
+%if 0%{?rhel} >= 8
+Provides: yum-rhn-plugin = %{version}
 %endif
 
 %description
@@ -51,6 +50,7 @@ Summary: DNF plugin for Spacewalk
 BuildRequires: python3-devel
 Requires: %{name} = %{version}-%{release}
 Requires: python3-rhn-client-tools >= 2.8.4
+Requires: python3-librepo
 
 %description -n python3-%{name}
 Python 3 specific files for %{name}.
@@ -60,9 +60,6 @@ Python 3 specific files for %{name}.
 %setup -q
 
 %build
-%if 0%{?fedora} && 0%{?fedora} <= 25
-patch -p4 < dnf-plugin-spacewalk-revert-to-1.0.patch
-%endif
 
 %install
 install -d %{buildroot}%{_sysconfdir}/dnf/plugins/
@@ -71,6 +68,8 @@ install -d %{buildroot}%{_mandir}/man{5,8}
 install -m 644 spacewalk.conf %{buildroot}%{_sysconfdir}/dnf/plugins/
 install -m 644 man/spacewalk.conf.5 %{buildroot}%{_mandir}/man5/
 install -m 644 man/dnf.plugin.spacewalk.8 %{buildroot}%{_mandir}/man8/
+ln -sf dnf.plugin.spacewalk.8 $RPM_BUILD_ROOT%{_mandir}/man8/dnf-plugin-spacewalk.8
+ln -sf dnf.plugin.spacewalk.8 $RPM_BUILD_ROOT%{_mandir}/man8/yum-rhn-plugin.8
 
 # python2
 %if 0%{?build_py2}
@@ -112,6 +111,24 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
 %endif
 
 %changelog
+* Fri Oct 19 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.5-1
+- librepo dependency is not added automatically
+
+* Tue Oct 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.4-1
+- spec cleanup (no more builds on Fedora <= 25)
+- fixed plugin for dnf > 3.6.0
+
+* Wed May 30 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.3-1
+- client/rhel: Enable DNF plugin for Mageia 6+ and openSUSE Leap 15.0+
+
+* Mon May 28 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.2-1
+- 1581665 - provide useful symlinks to a manpage
+- 1581665 - provide yum-rhn-plugin on new RHEL systems
+
+* Mon May 21 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.1-1
+- 1580392 - create a symlink to a manpage named after package name
+- Bumping package versions for 2.9.
+
 * Mon Mar 19 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.8-1
 - don't build python2 subpackages on systems with default python2
 

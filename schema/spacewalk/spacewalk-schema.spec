@@ -3,7 +3,7 @@
 Name:           spacewalk-schema
 Summary:        SQL schema for Spacewalk server
 
-Version:        2.9.2
+Version:        2.9.7
 Release:        1%{?dist}
 Source0:        %{name}-%{version}.tar.gz
 
@@ -89,6 +89,21 @@ install -m 755 schema-source-sanity-check.pl $RPM_BUILD_ROOT%{_bindir}/schema-so
 %attr(755,root,root) %{_bindir}/schema-source-sanity-check.pl
 
 %changelog
+* Fri Sep 21 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.7-1
+- 1624826 - added kickstart distribution data for RHEL 8
+
+* Tue Jul 03 2018 Jan Dobes <jdobes@redhat.com> 2.9.6-1
+- Add kernel options (post) to KickstartableTree
+
+* Tue Jun 19 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.5-1
+- Clean up SUSE Studio credentials from the database
+
+* Wed May 23 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.4-1
+- 1576002 - fix detection of "correct" original record
+
+* Wed May 09 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.3-1
+- drop the trigger only if it exists
+
 * Mon Apr 16 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.2-1
 - 1543381 - teach triggers about comps_type_id
 

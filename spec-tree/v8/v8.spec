@@ -25,7 +25,7 @@
 
 Name:		v8
 Version:	%{somajor}.%{sominor}.%{sobuild}.%{sotiny}
-Release:	2.3%{?dist}
+Release:	2.4%{?dist}
 Epoch:		1
 Summary:	JavaScript Engine
 License:	BSD
@@ -185,8 +185,8 @@ chmod -x %{buildroot}%{_includedir}/v8/extensions/*.h
 
 # install Python JS minifier scripts for nodejs
 install -d %{buildroot}%{python_sitelib}
-sed -i 's|/usr/bin/python2.4|/usr/bin/env python|g' tools/jsmin.py
-sed -i 's|/usr/bin/python2.4|/usr/bin/env python|g' tools/js2c.py
+sed -i 's|/usr/bin/python2.4|/usr/bin/python|g' tools/jsmin.py
+sed -i 's|/usr/bin/python2.4|/usr/bin/python|g' tools/js2c.py
 install -p -m0744 tools/jsmin.py %{buildroot}%{python_sitelib}/
 install -p -m0744 tools/js2c.py %{buildroot}%{python_sitelib}/
 chmod -R -x %{buildroot}%{python_sitelib}/*.py*
@@ -211,6 +211,9 @@ rm -rf %{buildroot}
 %{python_sitelib}/j*.py*
 
 %changelog
+* Mon Jul 09 2018 Tomas Kasparek <tkasparek@redhat.com> 3.14.5.10-2.4
+- get rid of #/usr/bin/env shebang
+
 * Fri Feb 09 2018 Michael Mraka <michael.mraka@redhat.com> 3.14.5.10-2.3
 - removed %%%%defattr from specfile
 - removed Group from specfile

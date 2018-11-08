@@ -19,7 +19,7 @@
 Name: spacewalk-java
 Summary: Java web application files for Spacewalk
 License: GPLv2
-Version: 2.9.10
+Version: 2.9.28
 Release: 1%{?dist}
 URL:       https://github.com/spacewalkproject/spacewalk
 Source0:   https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -52,7 +52,6 @@ Requires: spacewalk-java-jdbc
 Requires: spacewalk-java-lib
 Requires: stringtree-json
 Requires: struts >= 0:1.3.0
-Requires: susestudio-java-client
 Requires: tomcat-taglibs-standard
 Requires: xalan-j2 >= 0:2.6.0
 Requires: xerces-j2
@@ -236,7 +235,6 @@ BuildRequires: simple-xml
 BuildRequires: sitemesh
 BuildRequires: stringtree-json
 BuildRequires: struts >= 0:1.3.0
-BuildRequires: susestudio-java-client
 BuildRequires: tanukiwrapper
 BuildRequires: tomcat-taglibs-standard
 %if 0%{?run_checkstyle}
@@ -691,7 +689,6 @@ fi
 %{jardir}/simple-xml.jar
 %{jardir}/sitemesh.jar
 %{jardir}/stringtree-json.jar
-%{jardir}/susestudio-java-client.jar
 %{jardir}/tanukiwrapper.jar
 %{jardir}/velocity-*.jar
 %{jardir}/xalan-j2.jar
@@ -757,6 +754,98 @@ fi
 %{_prefix}/share/rhn/search/lib/postgresql-jdbc.jar
 
 %changelog
+* Thu Nov 01 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.28-1
+- 1640999 - fix status icons
+- 1640999 - show correct name of the channel provididing rhncfg* packages
+
+* Thu Nov 01 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.27-1
+- 1624837 - suppress warning if AppStream addon is enabled
+- 1624837 - enable appstream by default
+- 1624837 - add appstream ks corresponding to given baseos ks
+
+* Wed Oct 17 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.26-1
+- 1624837 - show a warning when AppStream is missing
+
+* Tue Oct 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.25-1
+- properly escaping shell variables in snippets
+
+* Tue Aug 21 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.24-1
+- Fix icon typo
+
+* Tue Jul 31 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.23-1
+- Fix: errata IDs must be unique
+
+* Mon Jul 30 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.22-1
+- 1581744 - disable errata updates when modules are present
+- 1581744 - disable API manipulation with packages on servers with modules
+- 1581744 - don't split the message
+
+* Mon Jul 09 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.21-1
+- get rid of #/usr/bin/env shebang
+
+* Tue Jul 03 2018 Jan Dobes <jdobes@redhat.com> 2.9.20-1
+- fix type parameters for java 7
+- Make kernelOptionsPost naming consistent
+- Remove Distro create in favor of a Distro Builder
+- Add kernel options (post) to KickstartableTree
+- refactor: pull creating/updating a cobbler Distro to a helper class
+- refactor: inline updateCobblerFields() method (used only once)
+- fix: remove unneeded save distro.save()
+- refactor: move creating ks metadata to a common method
+- fix: make creating cobbler ks metadata consistent across scenarios
+- refactor: move related cobbler tests to standalone classes
+- Tests for cobbler commands
+
+* Mon Jul 02 2018 Jan Dobes <jdobes@redhat.com> 2.9.19-1
+- Utilize deleteVirtualInstanceOnly when deleting a Server, clean unused method
+- Refactoring: avoid ill-named and once-used method
+- Fix removing virtual guests from host servers in System
+  detail->Virtualization table
+- Fix broken equals & hashCode implementation for VirtualInstance, adjust tests
+
+* Mon Jul 02 2018 Jan Dobes <jdobes@redhat.com> 2.9.18-1
+- SystemDetailsEditAction: check management entitlement
+- SSM: check for presence of management entitlement
+- Check for presence of management entitlement in System Details and Kickstart
+  pages
+- SystemHardwareAction: hide subscribe channel link for unentitled systems
+- SystemHandler: catch and convert MissingEntitlementException to XMLRPC
+  exceptions
+- ActionManager: throw MissingEntitlementException in hardware and package
+  refresh
+- SystemHardwareAction: hide empty parts in hardware overview
+- SystemHardwareAction: hide UI parts for unentitled systems
+
+* Tue Jun 26 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.17-1
+- SLES errata have lower case synopsis
+
+* Tue Jun 26 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.16-1
+- 1581744 - provide a warning when doing package actions on channels with
+  modules
+
+* Tue Jun 19 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.15-1
+- Remove the dependency on susestudio-java-client
+- Simplified version of the image deployment page
+- Remove the SUSE Studio credentials page
+
+* Fri Jun 15 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.14-1
+- Build and encode the url_bounce correctly
+
+* Fri Jun 01 2018 Jiri Dostal <jdostal@redhat.com> 2.9.13-1
+- Change data type of key counters according to the database and constraint.
+- Remove unused local variable strValue
+- Add new JUnit test case for long constraint.
+- Display messages about wrong input more end-user friendly.
+- Change misleading name of method isValid to validate.
+
+* Mon May 28 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.12-1
+- Revert "ClientCertificate - make not publically used methods/attributes
+  private"
+
+* Tue May 22 2018 Jiri Dostal <jdostal@redhat.com> 2.9.11-1
+- Refactored some existing code
+- Add a method in spacecmd to update the software channel
+
 * Tue Apr 17 2018 Jiri Dostal <jdostal@redhat.com> 2.9.10-1
 - Relevant errata dosn't have colored icons
 

@@ -1,43 +1,90 @@
-%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8 || 0%{?mageia}
 %global build_py3   1
 %global default_py3 1
 %endif
 
-%if 0%{?fedora} >= 28 || 0%{?rhel} >= 8
+%if 0%{?fedora} >= 28 || 0%{?rhel} >= 8 || 0%{?mageia}
 %global py3_deps   1
 %endif
 
 %global build_py2   1
 
+%{!?_presetdir:%global _presetdir /lib/systemd/system-preset}
+%if %{_vendor} == "debbuild"
+# Bash constructs in scriptlets don't play nice with Debian's default shell, dash
+%global _buildshell /bin/bash
+%endif
+
+%{!?__python2:%global __python2 /usr/bin/python2}
+%{!?__python3:%global __python3 /usr/bin/python3}
+
+%if %{undefined python2_version}
+%global python2_version %(%{__python2} -Esc "import sys; sys.stdout.write('{0.major}.{0.minor}'.format(sys.version_info))")
+%endif
+
+%if %{undefined python3_version}
+%global python3_version %(%{__python3} -Ic "import sys; sys.stdout.write(sys.version[:3])")
+%endif
+
+%if %{undefined python2_sitelib}
+%global python2_sitelib %(%{__python2} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+%endif
+
+%if %{undefined python3_sitelib}
+%global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")
+%endif
+
+%if %{_vendor} == "debbuild"
+# For making sure we can set the right args for deb distros
+%global is_deb 1
+%endif
+
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
-%{!?python2_sitelib: %global python2_sitelib %(python -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
 
 Summary: Support programs and libraries for Red Hat Satellite or Spacewalk
 Name: rhn-client-tools
-Version: 2.9.7
+Version: 2.9.27
 Release: 1%{?dist}
+%if %{_vendor} == "debbuild"
+Group:      admin
+Packager:   Spacewalk Project <spacewalk-devel@redhat.com>
+%endif
 License: GPLv2
-Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
+Source0: %{name}-%{version}.tar.gz
 URL:     https://github.com/spacewalkproject/spacewalk
 BuildArch: noarch
 %if 0%{?suse_version}
 BuildRequires: update-desktop-files
 %endif
 
+%if %{_vendor} != "debbuild"
 Requires: rpm >= 4.2.3-24_nonptl
 Requires: /usr/bin/gpg
 Requires: coreutils
-Requires: %{pythonX}-%{name} = %{version}-%{release}
 
 %if 0%{?suse_version}
 Requires: zypper
 %else
-%if 0%{?fedora} || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?rhel} >= 8 || 0%{?mageia} >= 6
 Requires: dnf
 %else
 Requires: yum
 %endif # 0%{?fedora}
 %endif # 0%{?suse_version}
+%endif
+
+%if %{_vendor} == "debbuild"
+Requires: apt
+%if 0%{?ubuntu} >= 1804
+Requires: gpg
+%else
+Requires: gnupg
+%endif
+Requires: coreutils
+%endif
+BuildRequires: rpm
+
+Requires: %{pythonX}-%{name} = %{version}-%{release}
 
 Conflicts: up2date < 5.0.0
 Conflicts: yum-rhn-plugin < 1.6.4-1
@@ -52,6 +99,10 @@ BuildRequires: desktop-file-utils
 
 %if 0%{?fedora}
 BuildRequires: fedora-logos
+BuildRequires: dnf
+%endif
+
+%if 0%{?mageia} >= 6
 BuildRequires: dnf
 %endif
 
@@ -72,8 +123,13 @@ system to receive software updates from Red Hat Satellite or Spacewalk.
 %package -n python2-%{name}
 Summary: Support programs and libraries for Red Hat Satellite or Spacewalk
 %{?python_provide:%python_provide python2-%{name}}
+%if %{_vendor} == "debbuild"
+Group: python
+%endif
 Requires: %{name} = %{version}-%{release}
 Requires: rhnlib >= 2.5.78
+
+%if %{_vendor} != "debbuild"
 
 %if 0%{?fedora} || 0%{?rhel} >= 8
 Requires: pygobject2
@@ -87,22 +143,27 @@ Requires: python-gudev
 %endif # 0%{?fedora}
 
 %if 0%{?rhel} || 0%{?fedora}
+%if 0%{?py3_deps}
+Requires: python2-newt
+%else
 Requires: newt-python
+%endif
 %endif
 
 %if 0%{?suse_version}
 Requires: dbus-1-python
 Requires: python-newt
 %else
+%if 0%{?mageia}
+Requires: python-dbus
+%else
 %if 0%{?py3_deps}
 Requires: python2-dbus
 %else
 Requires: dbus-python
 %endif
+%endif # 0%{?mageia}
 %endif # 0%{?suse_version}
-
-# The following BuildRequires are for check only
-Requires: rhnlib >= 2.5.78
 
 %if 0%{?py3_deps}
 Requires: python2-rpm
@@ -111,7 +172,11 @@ Requires: python2-ethtool >= 0.4
 BuildRequires: python2-devel
 Requires: python2-hwdata
 BuildRequires: python2-rpm
+%if 0%{?mageia}
+BuildRequires: python-coverage
+%else
 BuildRequires: python2-coverage
+%endif
 %else
 Requires: rpm-python
 Requires: python-dmidecode
@@ -121,6 +186,27 @@ Requires: python-hwdata
 BuildRequires: rpm-python
 BuildRequires: python-coverage
 %endif
+%endif
+
+%if %{_vendor} == "debbuild"
+Requires: python-rpm
+Requires: python-dmidecode
+Requires: python-ethtool >= 0.4
+BuildRequires: python-dev
+Requires: python2-hwdata
+BuildRequires: python-rpm
+BuildRequires: python-coverage
+Requires: gir1.2-gudev-1.0
+Requires: python-gi
+Requires: python-pyudev
+Requires: python-dbus
+Requires: python-newt
+Requires(preun): python-minimal
+Requires(post): python-minimal
+%endif
+
+# The following BuildRequires are for check only
+Requires: rhnlib >= 2.5.78
 
 %description -n python2-%{name}
 Python 2 specific files of %{name}.
@@ -130,7 +216,12 @@ Python 2 specific files of %{name}.
 %package -n python3-%{name}
 Summary: Support programs and libraries for Red Hat Satellite or Spacewalk
 %{?python_provide:%python_provide python3-%{name}}
+%if %{_vendor} == "debbuild"
+Group: python
+%endif
 Requires: %{name} = %{version}-%{release}
+
+%if %{_vendor} != "debbuild"
 %if 0%{?suse_version} >= 1140
 Requires: python3-dbus-python
 Requires: python3-newt
@@ -141,12 +232,25 @@ Requires: python3-dbus
 Requires: newt-python3
 Requires: python3-gobject-base
 %endif
+BuildRequires: python3-devel
+%endif
+
 Requires: python3-rpm
 Requires: python3-dmidecode
 Requires: python3-netifaces
 Requires: python3-hwdata
 Requires: python3-rhnlib >= 2.5.78
-BuildRequires: python3-devel
+
+%if %{_vendor} == "debbuild"
+BuildRequires: python3-dev
+Requires: python3-dbus
+Requires: python3-newt
+Requires: gir1.2-gudev-1.0
+Requires: python3-pyudev
+Requires: python3-gi
+Requires(preun): python3-minimal
+Requires(post): python3-minimal
+%endif
 
 # The following BuildRequires are for check only
 BuildRequires: python3-coverage
@@ -162,14 +266,20 @@ Python 3 specific files of %{name}.
 Summary: Check for RHN actions
 Requires: %{name} = %{version}-%{release}
 Requires: %{pythonX}-rhn-check = %{version}-%{release}
+%if %{_vendor} != "debbuild"
 %if 0%{?suse_version}
 Requires: zypp-plugin-spacewalk
 %else
-%if 0%{?fedora} || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?rhel} >= 8 || 0%{?mageia} >= 6
 Requires: dnf-plugin-spacewalk >= 2.4.0
 %else
 Requires: yum-rhn-plugin >= 1.6.4-1
 %endif
+%endif
+%endif
+
+%if %{_vendor} == "debbuild"
+Requires: apt-transport-spacewalk
 %endif
 
 %description -n rhn-check
@@ -182,6 +292,11 @@ Summary: Check for RHN actions
 %{?python_provide:%python_provide python2-rhn-check}
 Requires: rhn-check = %{version}-%{release}
 
+%if %{_vendor} == "debbuild"
+Requires(preun): python-minimal
+Requires(post): python-minimal
+%endif
+
 %description -n python2-rhn-check
 Python 2 specific files for rhn-check.
 %endif
@@ -192,6 +307,11 @@ Summary: Support programs and libraries for Red Hat Satellite or Spacewalk
 %{?python_provide:%python_provide python3-rhn-check}
 Requires: rhn-check = %{version}-%{release}
 
+%if %{_vendor} == "debbuild"
+Requires(preun): python3-minimal
+Requires(post): python3-minimal
+%endif
+
 %description -n python3-rhn-check
 Python 3 specific files for rhn-check.
 %endif
@@ -200,8 +320,11 @@ Python 3 specific files for rhn-check.
 %package -n rhn-setup
 Summary: Configure and register an RHN/Spacewalk client
 Requires: %{pythonX}-rhn-setup = %{version}-%{release}
-%if 0%{?fedora} || 0%{?rhel}
+%if 0%{?fedora} || 0%{?rhel} || 0%{?debian} || 0%{?ubuntu}
 Requires: usermode >= 1.36
+%endif
+%if 0%{?mageia}
+Requires: usermode-consoleonly >= 1.36
 %endif
 Requires: %{name} = %{version}-%{release}
 Requires: rhnsd
@@ -218,6 +341,14 @@ Requires: rhn-setup = %{version}-%{release}
 %if 0%{?fedora} || 0%{?rhel}
 Requires: newt-python
 %endif
+%if 0%{?mageia} || 0%{?debian} || 0%{?ubuntu}
+Requires: python-newt
+%endif
+
+%if %{_vendor} == "debbuild"
+Requires(preun): python-minimal
+Requires(post): python-minimal
+%endif
 
 %description -n python2-rhn-setup
 Python 2 specific files for rhn-setup.
@@ -228,7 +359,16 @@ Python 2 specific files for rhn-setup.
 Summary: Configure and register an RHN/Spacewalk client
 %{?python_provide:%python_provide python3-rhn-setup}
 Requires: rhn-setup = %{version}-%{release}
+%if 0%{?mageia} || 0%{?debian} || 0%{?ubuntu} || 0%{?suse_version} >= 1140
+Requires: python3-newt
+%else
 Requires: newt-python3
+%endif
+
+%if %{_vendor} == "debbuild"
+Requires(preun): python3-minimal
+Requires(post): python3-minimal
+%endif
 
 %description -n python3-rhn-setup
 Python 3 specific files for rhn-setup.
@@ -241,7 +381,16 @@ Requires: %{name} = %{version}-%{release}
 Requires: %{pythonX}-rhn-setup = %{version}-%{release}
 Requires: %{pythonX}-rhn-setup-gnome = %{version}-%{release}
 Requires: rhn-setup = %{version}-%{release}
+
+%if %{_vendor} == "debbuild"
+Requires: libpam0g
+Requires: libpam-modules
+Requires: libpam-runtime
+Requires: libpam-gnome-keyring
+%else
 Requires: pam >= 0.72
+%endif
+
 
 %description -n rhn-setup-gnome
 rhn-setup-gnome contains a GTK+ graphical interface for configuring and
@@ -252,14 +401,38 @@ registering a system with a Red Hat Satellite or Spacewalk server.
 Summary: Configure and register an RHN/Spacewalk client
 %{?python_provide:%python_provide python2-rhn-setup-gnome}
 Requires: rhn-setup-gnome = %{version}-%{release}
+%if %{_vendor} != "debbuild"
 %if 0%{?suse_version}
 Requires: python-gnome python-gtk
+%else
+%if 0%{?mageia}
+Requires: pygtk2.0 pygtk2.0-libglade
+Requires: usermode
 %else
 Requires: pygtk2 pygtk2-libglade
 Requires: usermode-gtk
 %endif
-%if 0%{?fedora} || 0%{?rhel}
+%endif
+
+%if 0%{?rhel} || 0%{?fedora}
 Requires: liberation-sans-fonts
+%endif
+%if 0%{?mageia}
+Requires: fonts-ttf-liberation
+%endif
+%if 0%{?suse_version}
+Requires: liberation-fonts
+%endif
+%endif
+
+%if %{_vendor} == "debbuild"
+Requires: python-gnome2
+Requires: python-gtk2
+Requires: python-glade2
+Requires: usermode
+Requires: fonts-liberation
+Requires(preun): python-minimal
+Requires(post): python-minimal
 %endif
 
 %description -n python2-rhn-setup-gnome
@@ -271,15 +444,39 @@ Python 2 specific files for rhn-setup-gnome.
 Summary: Configure and register an RHN/Spacewalk client
 %{?python_provide:%python_provide python3-rhn-setup-gnome}
 Requires: rhn-setup-gnome = %{version}-%{release}
-%if 0%{?suse_version}
-Requires: python-gnome python-gtk
-%else
-Requires: python3-gobject-base gtk3
 # gtk-builder-convert
+%if %{_vendor} != "debbuild"
 BuildRequires: gtk2-devel
+Requires: gtk3
+%if 0%{?suse_version}
+Requires: python3-gobject
+%else
+%if 0%{?mageia}
+Requires: python3-gobject3
+%else
+Requires: python3-gobject-base
 %endif
-%if 0%{?fedora} || 0%{?rhel}
+%endif
+%if 0%{?rhel} || 0%{?fedora}
 Requires: liberation-sans-fonts
+%endif
+%if 0%{?mageia}
+Requires: fonts-ttf-liberation
+%endif
+%if 0%{?suse_version}
+Requires: liberation-fonts
+%endif
+%endif
+
+%if %{_vendor} == "debbuild"
+BuildRequires: libgtk2.0-dev
+Requires: libgtk-3-bin
+Requires: gir1.2-gtk-3.0
+
+Requires: python3-gi
+Requires: fonts-liberation
+Requires(preun): python3-minimal
+Requires(post): python3-minimal
 %endif
 
 %description -n python3-rhn-setup-gnome
@@ -288,20 +485,20 @@ Python 3 specific files for rhn-setup-gnome.
 
 
 %prep
-%setup -q 
+%setup -q
 
 %build
-make -f Makefile.rhn-client-tools
+make -f Makefile.rhn-client-tools %{?is_deb:PLATFORM=deb}
 
 %install
 %if 0%{?build_py2}
 make -f Makefile.rhn-client-tools install VERSION=%{version}-%{release} \
-        PYTHONPATH=%{python_sitelib} PYTHONVERSION=%{python_version} \
-        PREFIX=$RPM_BUILD_ROOT MANPATH=%{_mandir}
+        PYTHONPATH=%{python2_sitelib} PYTHONVERSION=%{python2_version} \
+        PREFIX=$RPM_BUILD_ROOT MANPATH=%{_mandir} %{?is_deb:PLATFORM=deb}
 %endif
 %if 0%{?build_py3}
-sed -i 's|#!/usr/bin/python|#!/usr/bin/python3|' src/actions/*.py src/bin/*.py test/*.py
-make -f Makefile.rhn-client-tools
+sed -i 's|#!/usr/bin/python2|#!/usr/bin/python3|' src/actions/*.py src/bin/*.py test/*.py
+make -f Makefile.rhn-client-tools %{?is_deb:PLATFORM=deb}
 for g in data/*.glade ; do
         mv $g $g.old
         gtk-builder-convert $g.old $g
@@ -314,7 +511,7 @@ sed -i '/class="GtkVBox"/ {
                 }' data/gui.glade
 make -f Makefile.rhn-client-tools install VERSION=%{version}-%{release} \
         PYTHONPATH=%{python3_sitelib} PYTHONVERSION=%{python3_version} \
-        PREFIX=$RPM_BUILD_ROOT MANPATH=%{_mandir}
+        PREFIX=$RPM_BUILD_ROOT MANPATH=%{_mandir} %{?is_deb:PLATFORM=deb}
 %endif
 
 ln -sf consolehelper $RPM_BUILD_ROOT%{_bindir}/rhn_register
@@ -323,17 +520,17 @@ ln -s spacewalk-channel $RPM_BUILD_ROOT%{_sbindir}/rhn-channel
 mkdir -p $RPM_BUILD_ROOT/var/lib/up2date
 mkdir -pm700 $RPM_BUILD_ROOT%{_localstatedir}/spool/up2date
 touch $RPM_BUILD_ROOT%{_localstatedir}/spool/up2date/loginAuth.pkl
-%if 0%{?fedora}
+%if 0%{?fedora} || 0%{?mageia} || 0%{?debian} >= 8 || 0%{?ubuntu} >= 1504
 mkdir -p $RPM_BUILD_ROOT/%{_presetdir}
 install 50-spacewalk-client.preset $RPM_BUILD_ROOT/%{_presetdir}
 %endif
 
 %if 0%{?build_py2}
-%if 0%{?fedora} || 0%{?rhel} || 0%{?suse_version} >= 1140
-rm $RPM_BUILD_ROOT%{python_sitelib}/up2date_client/hardware_hal.*
+%if 0%{?fedora} || 0%{?rhel} || 0%{?suse_version} >= 1140 || 0%{?mageia} || 0%{?debian} || 0%{?ubuntu}
+rm $RPM_BUILD_ROOT%{python2_sitelib}/up2date_client/hardware_hal.*
 %else
-rm $RPM_BUILD_ROOT%{python_sitelib}/up2date_client/hardware_gudev.*
-rm $RPM_BUILD_ROOT%{python_sitelib}/up2date_client/hardware_udev.*
+rm $RPM_BUILD_ROOT%{python2_sitelib}/up2date_client/hardware_gudev.*
+rm $RPM_BUILD_ROOT%{python2_sitelib}/up2date_client/hardware_udev.*
 %endif
 %endif
 
@@ -342,7 +539,7 @@ rm -rf $RPM_BUILD_ROOT%{_datadir}/firstboot/modules/rhn_*_*.*
 %endif
 %if ! 0%{?rhel} || 0%{?rhel} > 6
 %if 0%{?build_py2}
-rm -rf $RPM_BUILD_ROOT%{python_sitelib}/up2date_client/firstboot
+rm -rf $RPM_BUILD_ROOT%{python2_sitelib}/up2date_client/firstboot
 %endif
 rm -rf $RPM_BUILD_ROOT%{_datadir}/firstboot/
 %endif
@@ -359,10 +556,12 @@ install rhn_register.appdata.xml $RPM_BUILD_ROOT/usr/share/metainfo/
 rm -f $RPM_BUILD_ROOT%{_bindir}/rhn_register
 %endif
 
+%if %{_vendor} != "debbuild"
 %find_lang %{name}
+%endif
 
 # create links to default script version
-%define default_suffix %{?default_py3:-%{python3_version}}%{!?default_py3:-%{python_version}}
+%define default_suffix %{?default_py3:-%{python3_version}}%{!?default_py3:-%{python2_version}}
 for i in \
     /usr/sbin/rhn-profile-sync \
     /usr/sbin/rhn_check \
@@ -374,7 +573,7 @@ for i in \
 done
 
 %if 0%{?suse_version}
-%py_compile -O %{buildroot}/%{python_sitelib}
+%py_compile -O %{buildroot}/%{python2_sitelib}
 %if 0%{?build_py3}
 %py3_compile -O %{buildroot}/%{python3_sitelib}
 %endif
@@ -386,19 +585,28 @@ rm -f %{_localstatedir}/spool/up2date/loginAuth.pkl
 %if ! 0%{?build_py3}
 %post -n rhn-setup-gnome
 touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
+# See posttrans section below
+%if %{_vendor} == "debbuild"
+gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
+%endif
 
 %postun -n rhn-setup-gnome
+%if %{_vendor} != "debbuild"
 if [ $1 -eq 0 ] ; then
+%endif
+%if %{_vendor} == "debbuild"
+if [[ "$1" == "purge" || "$1" == "remove" ]]; then
+%endif
     touch --no-create %{_datadir}/icons/hicolor &>/dev/null
     gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 fi
 
+# This macro doesn't exist for debbuild. I'm shoving this into post instead.
+%if %{_vendor} != "debbuild"
 %posttrans -n rhn-setup-gnome
 gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 %endif
-
-
-%clean
+%endif
 
 %if 0%{?fedora}
 %check
@@ -406,7 +614,14 @@ gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
 make -f Makefile.rhn-client-tools test
 %endif
 
+%if %{_vendor} == "debbuild"
+%files
+# No find_lang on Debian systems
+%{_datadir}/locale/
+/var/lib/up2date/
+%else
 %files -f %{name}.lang
+%endif
 # some info about mirrors
 %doc doc/mirrors.txt 
 %doc doc/AUTHORS
@@ -433,35 +648,35 @@ make -f Makefile.rhn-client-tools test
 #public keys and certificates
 %{_datadir}/rhn/RHNS-CA-CERT
 
-%if 0%{?fedora}
+%if 0%{?fedora} || 0%{?mageia} || 0%{?debian} >= 8 || 0%{?ubuntu} >= 1504
 %{_presetdir}/50-spacewalk-client.preset
 %endif
 
 %if 0%{?build_py2}
 %files -n python2-%{name}
-%{_sbindir}/rhn-profile-sync-%{python_version}
-%dir %{python_sitelib}/up2date_client/
-%{python_sitelib}/up2date_client/__init__.*
-%{python_sitelib}/up2date_client/config.*
-%{python_sitelib}/up2date_client/haltree.*
-%{python_sitelib}/up2date_client/hardware*
-%{python_sitelib}/up2date_client/up2dateUtils.*
-%{python_sitelib}/up2date_client/up2dateLog.*
-%{python_sitelib}/up2date_client/up2dateErrors.*
-%{python_sitelib}/up2date_client/up2dateAuth.*
-%{python_sitelib}/up2date_client/rpcServer.*
-%{python_sitelib}/up2date_client/rhnserver.*
-%{python_sitelib}/up2date_client/pkgUtils.*
-%{python_sitelib}/up2date_client/rpmUtils.*
-%{python_sitelib}/up2date_client/debUtils.*
-%{python_sitelib}/up2date_client/rhnPackageInfo.*
-%{python_sitelib}/up2date_client/rhnChannel.*
-%{python_sitelib}/up2date_client/rhnHardware.*
-%{python_sitelib}/up2date_client/transaction.*
-%{python_sitelib}/up2date_client/clientCaps.*
-%{python_sitelib}/up2date_client/capabilities.*
-%{python_sitelib}/up2date_client/rhncli.*
-%{python_sitelib}/up2date_client/pkgplatform.*
+%{_sbindir}/rhn-profile-sync-%{python2_version}
+%dir %{python2_sitelib}/up2date_client/
+%{python2_sitelib}/up2date_client/__init__.*
+%{python2_sitelib}/up2date_client/config.*
+%{python2_sitelib}/up2date_client/haltree.*
+%{python2_sitelib}/up2date_client/hardware*
+%{python2_sitelib}/up2date_client/up2dateUtils.*
+%{python2_sitelib}/up2date_client/up2dateLog.*
+%{python2_sitelib}/up2date_client/up2dateErrors.*
+%{python2_sitelib}/up2date_client/up2dateAuth.*
+%{python2_sitelib}/up2date_client/rpcServer.*
+%{python2_sitelib}/up2date_client/rhnserver.*
+%{python2_sitelib}/up2date_client/pkgUtils.*
+%{python2_sitelib}/up2date_client/rpmUtils.*
+%{python2_sitelib}/up2date_client/debUtils.*
+%{python2_sitelib}/up2date_client/rhnPackageInfo.*
+%{python2_sitelib}/up2date_client/rhnChannel.*
+%{python2_sitelib}/up2date_client/rhnHardware.*
+%{python2_sitelib}/up2date_client/transaction.*
+%{python2_sitelib}/up2date_client/clientCaps.*
+%{python2_sitelib}/up2date_client/capabilities.*
+%{python2_sitelib}/up2date_client/rhncli.*
+%{python2_sitelib}/up2date_client/pkgplatform.*
 %endif
 
 %if 0%{?build_py3}
@@ -489,6 +704,8 @@ make -f Makefile.rhn-client-tools test
 %{python3_sitelib}/up2date_client/capabilities.*
 %{python3_sitelib}/up2date_client/rhncli.*
 %{python3_sitelib}/up2date_client/pkgplatform.*
+
+%if %{_vendor} != "debbuild"
 %dir %{python3_sitelib}/up2date_client/__pycache__/
 %{python3_sitelib}/up2date_client/__pycache__/__init__.*
 %{python3_sitelib}/up2date_client/__pycache__/config.*
@@ -512,6 +729,7 @@ make -f Makefile.rhn-client-tools test
 %{python3_sitelib}/up2date_client/__pycache__/rhncli.*
 %{python3_sitelib}/up2date_client/__pycache__/pkgplatform.*
 %endif
+%endif
 
 %files -n rhn-check
 %{_mandir}/man8/rhn_check.8*
@@ -519,17 +737,17 @@ make -f Makefile.rhn-client-tools test
 
 %if 0%{?build_py2}
 %files -n python2-rhn-check
-%{_sbindir}/rhn_check-%{python_version}
-%dir %{python_sitelib}/rhn
-%dir %{python_sitelib}/rhn/actions/
-%{python_sitelib}/up2date_client/getMethod.*
+%{_sbindir}/rhn_check-%{python2_version}
+%dir %{python2_sitelib}/rhn
+%dir %{python2_sitelib}/rhn/actions/
+%{python2_sitelib}/up2date_client/getMethod.*
 # actions for rhn_check to run
-%{python_sitelib}/rhn/actions/__init__.*
-%{python_sitelib}/rhn/actions/hardware.*
-%{python_sitelib}/rhn/actions/systemid.*
-%{python_sitelib}/rhn/actions/reboot.*
-%{python_sitelib}/rhn/actions/rhnsd.*
-%{python_sitelib}/rhn/actions/up2date_config.*
+%{python2_sitelib}/rhn/actions/__init__.*
+%{python2_sitelib}/rhn/actions/hardware.*
+%{python2_sitelib}/rhn/actions/systemid.*
+%{python2_sitelib}/rhn/actions/reboot.*
+%{python2_sitelib}/rhn/actions/rhnsd.*
+%{python2_sitelib}/rhn/actions/up2date_config.*
 %endif
 
 %if 0%{?build_py3}
@@ -544,6 +762,8 @@ make -f Makefile.rhn-client-tools test
 %{python3_sitelib}/rhn/actions/reboot.*
 %{python3_sitelib}/rhn/actions/rhnsd.*
 %{python3_sitelib}/rhn/actions/up2date_config.*
+
+%if %{_vendor} != "debbuild"
 %dir %{python3_sitelib}/rhn/actions/__pycache__/
 %{python3_sitelib}/up2date_client/__pycache__/getMethod.*
 %{python3_sitelib}/rhn/actions/__pycache__/__init__.*
@@ -552,6 +772,7 @@ make -f Makefile.rhn-client-tools test
 %{python3_sitelib}/rhn/actions/__pycache__/reboot.*
 %{python3_sitelib}/rhn/actions/__pycache__/rhnsd.*
 %{python3_sitelib}/rhn/actions/__pycache__/up2date_config.*
+%endif
 %endif
 
 %files -n rhn-setup
@@ -562,7 +783,7 @@ make -f Makefile.rhn-client-tools test
 
 %config(noreplace) %{_sysconfdir}/security/console.apps/rhn_register
 %config(noreplace) %{_sysconfdir}/pam.d/rhn_register
-%if 0%{?fedora} || 0%{?rhel}
+%if 0%{?fedora} || 0%{?rhel} || 0%{?mageia}
 %{_bindir}/rhn_register
 %endif
 %{_sbindir}/rhn_register
@@ -581,9 +802,9 @@ make -f Makefile.rhn-client-tools test
 
 %if 0%{?build_py2}
 %files -n python2-rhn-setup
-%{_sbindir}/rhn_register-%{python_version}
-%{_sbindir}/rhnreg_ks-%{python_version}
-%{_sbindir}/spacewalk-channel-%{python_version}
+%{_sbindir}/rhn_register-%{python2_version}
+%{_sbindir}/rhnreg_ks-%{python2_version}
+%{_sbindir}/spacewalk-channel-%{python2_version}
 %{python2_sitelib}/up2date_client/rhnreg.*
 %{python2_sitelib}/up2date_client/pmPlugin.*
 %{python2_sitelib}/up2date_client/tui.*
@@ -599,10 +820,13 @@ make -f Makefile.rhn-client-tools test
 %{python3_sitelib}/up2date_client/pmPlugin.*
 %{python3_sitelib}/up2date_client/tui.*
 %{python3_sitelib}/up2date_client/rhnreg_constants.*
+
+%if %{_vendor} != "debbuild"
 %{python3_sitelib}/up2date_client/__pycache__/rhnreg.*
 %{python3_sitelib}/up2date_client/__pycache__/pmPlugin.*
 %{python3_sitelib}/up2date_client/__pycache__/tui.*
 %{python3_sitelib}/up2date_client/__pycache__/rhnreg_constants.*
+%endif
 %endif
 
 %files -n rhn-setup-gnome
@@ -615,8 +839,8 @@ make -f Makefile.rhn-client-tools test
 %{_datadir}/icons/hicolor/22x22/apps/up2date.png
 %{_datadir}/icons/hicolor/256x256/apps/up2date.png
 %endif
-%{_datadir}/applications/rhn_register.desktop
 /usr/share/metainfo/rhn_register.appdata.xml
+%{_datadir}/applications/rhn_register.desktop
 %{_datadir}/rhn/up2date_client/gui.glade
 %{_datadir}/rhn/up2date_client/progress.glade
 %{_datadir}/rhn/up2date_client/rh_register.glade
@@ -638,21 +862,21 @@ make -f Makefile.rhn-client-tools test
 
 %if 0%{?build_py2}
 %files -n python2-rhn-setup-gnome
-%{python_sitelib}/up2date_client/messageWindow.*
-%{python_sitelib}/up2date_client/rhnregGui.*
-%{python_sitelib}/up2date_client/gtk_compat.*
-%{python_sitelib}/up2date_client/gui.*
-%{python_sitelib}/up2date_client/progress.*
+%{python2_sitelib}/up2date_client/messageWindow.*
+%{python2_sitelib}/up2date_client/rhnregGui.*
+%{python2_sitelib}/up2date_client/gtk_compat.*
+%{python2_sitelib}/up2date_client/gui.*
+%{python2_sitelib}/up2date_client/progress.*
 %if 0%{?rhel} == 6
 %{_datadir}/firstboot/modules/rhn_register.*
-%{python_sitelib}/up2date_client/firstboot/rhn_login_gui.*
-%{python_sitelib}/up2date_client/firstboot/rhn_start_gui.*
-%{python_sitelib}/up2date_client/firstboot/rhn_choose_server_gui.*
-%{python_sitelib}/up2date_client/firstboot/rhn_choose_channel.*
-%{python_sitelib}/up2date_client/firstboot/rhn_provide_certificate_gui.*
-%{python_sitelib}/up2date_client/firstboot/rhn_create_profile_gui.*
-%{python_sitelib}/up2date_client/firstboot/rhn_review_gui.*
-%{python_sitelib}/up2date_client/firstboot/rhn_finish_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_login_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_start_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_choose_server_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_choose_channel.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_provide_certificate_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_create_profile_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_review_gui.*
+%{python2_sitelib}/up2date_client/firstboot/rhn_finish_gui.*
 %endif
 %endif
 
@@ -663,14 +887,154 @@ make -f Makefile.rhn-client-tools test
 %{python3_sitelib}/up2date_client/gtk_compat.*
 %{python3_sitelib}/up2date_client/gui.*
 %{python3_sitelib}/up2date_client/progress.*
+
+%if %{_vendor} != "debbuild"
 %{python3_sitelib}/up2date_client/__pycache__/messageWindow.*
 %{python3_sitelib}/up2date_client/__pycache__/rhnregGui.*
 %{python3_sitelib}/up2date_client/__pycache__/gtk_compat.*
 %{python3_sitelib}/up2date_client/__pycache__/gui.*
 %{python3_sitelib}/up2date_client/__pycache__/progress.*
 %endif
+%endif
+
+%if %{_vendor} == "debbuild"
+
+%if 0%{?build_py2}
+%post -n python2-%{name}
+# Do late-stage bytecompilation, per debian policy
+pycompile -p python2-%{name} -V -3.0
+
+%preun -n python2-%{name}
+# Ensure all *.py[co] files are deleted, per debian policy
+pyclean -p python2-%{name}
+
+%post -n python2-rhn-check
+# Do late-stage bytecompilation, per debian policy
+pycompile -p python2-rhn-check -V -3.0
+
+%preun -n python2-rhn-check
+# Ensure all *.py[co] files are deleted, per debian policy
+pyclean -p python2-rhn-check
+
+%post -n python2-rhn-setup
+# Do late-stage bytecompilation, per debian policy
+pycompile -p python2-rhn-setup -V -3.0
+
+%preun -n python2-rhn-setup
+# Ensure all *.py[co] files are deleted, per debian policy
+pyclean -p python2-rhn-setup
+
+%post -n python2-rhn-setup-gnome
+# Do late-stage bytecompilation, per debian policy
+pycompile -p python2-rhn-setup-gnome -V -3.0
+
+%preun -n python2-rhn-setup-gnome
+# Ensure all *.py[co] files are deleted, per debian policy
+pyclean -p python2-rhn-setup-gnome
+%endif
+
+%if 0%{?build_py3}
+%post -n python3-%{name}
+# Do late-stage bytecompilation, per debian policy
+py3compile -p python3-%{name} -V -4.0
+
+%preun -n python3-%{name}
+# Ensure all *.py[co] files are deleted, per debian policy
+py3clean -p python3-%{name}
+
+%post -n python3-rhn-check
+# Do late-stage bytecompilation, per debian policy
+py3compile -p python3-rhn-check -V -4.0
+
+%preun -n python3-rhn-check
+# Ensure all *.py[co] files are deleted, per debian policy
+py3clean -p python3-rhn-check
+
+%post -n python3-rhn-setup
+# Do late-stage bytecompilation, per debian policy
+py3compile -p python3-rhn-setup -V -4.0
+
+%preun -n python3-rhn-setup
+# Ensure all *.py[co] files are deleted, per debian policy
+py3clean -p python3-rhn-setup
+
+%post -n python3-rhn-setup-gnome
+# Do late-stage bytecompilation, per debian policy
+py3compile -p python3-rhn-setup-gnome -V -4.0
+
+%preun -n python3-rhn-setup-gnome
+# Ensure all *.py[co] files are deleted, per debian policy
+py3clean -p python3-rhn-setup-gnome
+%endif
+%endif
+
 
 %changelog
+* Tue Nov 06 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.27-1
+- 1646929 - convert values from bytes to string in py3
+
+* Thu Oct 25 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.26-1
+- Fix wrong python3-newt dependency name for SUSE
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.25-1
+- dbus package has different name in mageia
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.24-1
+- mageia does not provice 22x22 and 256x256 icons
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.23-1
+- fix build on mageia
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.22-1
+- coverage is in python-coverage on mageia
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.21-1
+- use explicit version of python
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.20-1
+- fix build on mageia
+
+* Mon Sep 17 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.19-1
+- python-unversioned-command is no longer needed
+- 1626421 - python3 is expecting str, not bytes
+
+* Tue Aug 21 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.18-1
+- Revert "1617942 - drop dmidecode dependency on s390x" - Spacewalk is
+  supported on x86_64 only
+- Revert "1617942 - split into arch package" - Spacewalk is supported on x86_64
+  only
+
+* Thu Aug 16 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.17-1
+- 1617942 - split into arch package
+
+* Thu Aug 16 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.16-1
+- 1617942 - drop dmidecode dependency on s390x
+- debUtils.py: Fix edge case finding pkg install time on Debian
+
+* Tue Jul 31 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.15-1
+- client, usix: Rework how client packaging is done for Debian/Ubuntu
+
+* Thu Jul 12 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.14-1
+- rhn-client-tools: Fix typo in rhnreg
+
+* Wed Jul 11 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.13-1
+- rhn-client-tools: Fix systemd detection for non-UsrMerge systems
+
+* Tue Jul 10 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.12-1
+- python-unversioned-command is available only in Rawhide
+
+* Tue Jul 10 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.11-1
+- require python-unversioned-command for /usr/bin/python simlink
+
+* Tue Jul 10 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.10-1
+- python_sitelib is actually python2_sitelib, be more clear about that
+
+* Tue Jul 10 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.9-1
+- be more explicit about which python version we require
+
+* Wed May 30 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.8-1
+- client/rhel: Enable DNF plugin for Mageia 6+ and openSUSE Leap 15.0+
+
 * Fri May 04 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.7-1
 - 1094744 - provide AppData file for rhn-setup-gnome
 
@@ -774,7 +1138,7 @@ make -f Makefile.rhn-client-tools test
 - fix dependencies of rhn-client-tools on different platforms
 
 * Fri Sep 22 2017 Michael Mraka <michael.mraka@redhat.com> 2.8.2-1
-- install files into python_sitelib/python3_sitelib
+- install files into python2_sitelib/python3_sitelib
 - let rpmbuild take care of .pyc/.pyo
 - move rhn-setup-gnome files into proper python2/python3 subpackages
 - move rhn-setup files into proper python2/python3 subpackages

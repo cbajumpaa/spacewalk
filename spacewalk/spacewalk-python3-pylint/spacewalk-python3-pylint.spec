@@ -1,5 +1,5 @@
 Name:		spacewalk-python3-pylint
-Version:	2.9.0
+Version:	2.9.1
 Release:	1%{?dist}
 Summary:	Pylint configuration for python3 spacewalk python packages
 
@@ -18,7 +18,11 @@ Requires:	python3-pylint < 1.0
 %endif
 %endif
 BuildRequires:	asciidoc
-BuildRequires:	libxslt
+%if 0%{?mageia}
+BuildRequires: lib64xslt1
+%else
+BuildRequires: libxslt
+%endif
 %if 0%{?rhel} && 0%{?rhel} < 6
 BuildRequires:	docbook-style-xsl
 %endif
@@ -68,6 +72,10 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.1-1
+- fix build on mageia
+- Bumping package versions for 2.9.
+
 * Mon Feb 12 2018 Eric Herget <eherget@redhat.com> 2.8.5-1
 - Split spacewalk-pylint into spacewalk-python2-pylint and spacewalk-python3-pylint.  Original changelog maintained in spacewalk-python2-pylint package.
 

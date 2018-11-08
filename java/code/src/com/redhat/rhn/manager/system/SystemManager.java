@@ -355,9 +355,13 @@ public class SystemManager extends BaseManager {
     }
 
     /**
-     * Deletes a server
+     * Deletes a Server and associated VirtualInstances:
+     *  - If the server was a virtual guest, remove the VirtualInstance that links it to its
+     *  host server.
+     *  - If the server was a virtual host, remove all its entitlements and all
+     *  VirtualInstances that link it to the guest servers.
      * @param user The user doing the deleting.
-     * @param sid The id of the system to be deleted
+     * @param sid The id of the Server to be deleted
      */
     public static void deleteServer(User user, Long sid) {
         /*
@@ -370,22 +374,21 @@ public class SystemManager extends BaseManager {
         CobblerSystemRemoveCommand rc = new CobblerSystemRemoveCommand(user, server);
         rc.store();
 
+        // remove associated VirtualInstances
+        Set<VirtualInstance> toRemove = new HashSet<VirtualInstance>();
         if (server.isVirtualGuest()) {
-            VirtualInstance virtInstance = server.getVirtualInstance();
-            virtInstance.deleteGuestSystem();
+            toRemove.add(server.getVirtualInstance());
         }
         else {
-            if (server.getGuests() != null) {
-                removeAllServerEntitlements(server.getId());
-                // Remove guest associations to the host system we're now deleting:
-                for (Iterator<VirtualInstance> it = server.getGuests().iterator(); it
-                        .hasNext();) {
-                    VirtualInstance vi = it.next();
-                    server.removeGuest(vi);
-                }
-            }
-            ServerFactory.delete(server);
+            removeAllServerEntitlements(server.getId());
+            toRemove.addAll(server.getGuests());
         }
+        for (VirtualInstance virtualInstance : toRemove) {
+            VirtualInstanceFactory.getInstance().deleteVirtualInstanceOnly(virtualInstance);
+        }
+
+        // remove server itself
+        ServerFactory.delete(server);
     }
 
     /**
@@ -1285,6 +1288,50 @@ public class SystemManager extends BaseManager {
     public static boolean serverHasVirtuaizationEntitlement(Long sid, Org org) {
         Server s = SystemManager.lookupByIdAndOrg(sid, org);
         return s.hasVirtualizationEntitlement();
+    }
+
+    /**
+     * Returns a count of systems without a certain entitlement in a set.
+     *
+     * @param user user making the request
+     * @param setLabel label of the set
+     * @param entitlementLabel label of the entitlement
+     * @return number of systems in the set without the entitlement
+     */
+    public static int countSystemsInSetWithoutEntitlement(User user, String setLabel,
+        String entitlementLabel) {
+        SelectMode m = ModeFactory.getMode("System_queries",
+                "count_systems_in_set_without_entitlement");
+
+        Map params = new HashMap();
+        params.put("user_id", user.getId());
+        params.put("set_label", setLabel);
+        params.put("entitlement_label", entitlementLabel);
+
+        DataResult dr = makeDataResult(params, null, null, m);
+        return ((Long)((HashMap)dr.get(0)).get("count")).intValue();
+    }
+
+    /**
+     * Returns a count of systems without a certain feature in a set.
+     *
+     * @param user user making the request
+     * @param setLabel label of the set
+     * @param featureLabel label of the feature
+     * @return number of systems in the set without the feature
+     */
+    public static int countSystemsInSetWithoutFeature(User user, String setLabel,
+        String featureLabel) {
+        SelectMode m = ModeFactory.getMode("System_queries",
+                "count_systems_in_set_without_feature");
+
+        Map params = new HashMap();
+        params.put("user_id", user.getId());
+        params.put("set_label", setLabel);
+        params.put("feature_label", featureLabel);
+
+        DataResult dr = makeDataResult(params, null, null, m);
+        return ((Long)((HashMap)dr.get(0)).get("count")).intValue();
     }
 
     /**

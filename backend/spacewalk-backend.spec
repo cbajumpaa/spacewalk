@@ -24,7 +24,7 @@
 %global apache_pkg httpd
 %endif
 
-%if 0%{?suse_version}
+%if 0%{?suse_version} || 0%{?mageia}
 %{!?pylint_check: %global pylint_check 0}
 %global apacheconfd %{_sysconfdir}/apache2/conf.d
 %global apache_user wwwrun
@@ -39,17 +39,19 @@
 %global python_prefix python
 %endif
 
+%define manzip %{?mageia:xz}%{!?mageia:gz}
+
 %global pythonrhnroot %{python_sitelib}/spacewalk
 
 Name: spacewalk-backend
 Summary: Common programs needed to be installed on the Spacewalk servers/proxies
 License: GPLv2
-Version: 2.9.6
+Version: 2.9.27
 Release: 1%{?dist}
 URL:       https://github.com/spacewalkproject/spacewalk
 Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
 BuildArch: noarch
-Requires: python, rpm-python
+Requires: python2, rpm-python
 # /etc/rhn is provided by spacewalk-proxy-common or by spacewalk-config
 Requires: /etc/rhn
 Requires: rhnlib >= 2.5.74
@@ -65,6 +67,7 @@ BuildRequires: spacewalk-python2-pylint
 BuildRequires: /usr/bin/msgfmt
 BuildRequires: /usr/bin/docbook2man
 BuildRequires: docbook-utils
+BuildRequires: python2
 BuildRequires: python2-spacewalk-usix
 %if 0%{?fedora} || 0%{?rhel} > 5 || 0%{?suse_version} > 1310
 BuildRequires: rhnlib >= 2.5.74
@@ -465,7 +468,7 @@ rm -f %{rhnconf}/rhnSecret.py*
 %attr(755,root,%{apache_group}) %dir %{rhnconfigdefaults}
 %attr(644,root,%{apache_group}) %{rhnconfigdefaults}/rhn.conf
 %attr(755,root,root) %{_bindir}/spacewalk-cfg-get
-%{_mandir}/man8/spacewalk-cfg-get.8.gz
+%{_mandir}/man8/spacewalk-cfg-get.8.%{manzip}
 # wsgi stuff
 %dir %{rhnroot}/wsgi
 %{rhnroot}/wsgi/__init__.py*
@@ -795,6 +798,75 @@ rm -f %{rhnconf}/rhnSecret.py*
 %endif
 
 %changelog
+* Fri Nov 02 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.27-1
+- Changed 'cp' parameters to work with the symlinks files.
+
+* Fri Nov 02 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.26-1
+- more meaningful variable names
+- Fixes proxy support for deb repos
+
+* Fri Oct 19 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.25-1
+- fixing pylint line-too-long
+
+* Fri Oct 19 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.24-1
+- 1622972 - convert datetime in python
+
+* Thu Oct 18 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.23-1
+- don't require python22, python2 is enough
+
+* Thu Oct 18 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.22-1
+- 1640156 - correctly recognize Nutanix AHV as virtual guest
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.21-1
+- mageia uses xz to compress man pages
+
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.20-1
+- fix build on mageia
+
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.19-1
+- use explicit version of python
+- python2 is not in default build root in Fedora 30+
+
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.18-1
+- fixed pylint error inconsistent-return-statements
+
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.17-1
+- 1622972 - sync errata if update date has changed
+
+* Fri Sep 21 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.16-1
+- 1626797 - fixed line-too-long (build time failure)
+
+* Fri Sep 21 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.15-1
+- 1626797 - don't fail if kickstart is missing, just warn
+
+* Tue Sep 04 2018 Jan Dobes <jdobes@redhat.com> 2.9.14-1
+- 1624463 - add parser for kickstart directory on local FS
+- 1624463 - refactoring: modify common KSDirParser to KSDirHtmlParser
+- 1624463 - refactoring: get is_non_local_repo earlier
+
+* Fri Jul 13 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.13-1
+- don't try to chgrp stdout
+- Add a debug flag to the spacewalk-repo-sync utility
+
+* Mon Jul 09 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.12-1
+- 1576775 - fix TypeError: 'NoneType' object is not iterable
+
+* Tue May 29 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.11-1
+- 1574437 - enable_nvrea should always be true for cdn-sync
+
+* Mon May 28 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.10-1
+- 1576006 - fix detection of parent channel
+
+* Thu May 17 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.9-1
+- 1576775 - refresh repodata when channel metadata change (satellite-sync)
+- 1576775 - refresh repodata when channel metadata change (cdn-sync, repo-sync)
+
+* Thu May 17 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.8-1
+- Fix crash in satellite_tools on RH/Fedora/Mageia urlgrabber
+
+* Wed May 09 2018 Jiri Dostal <jdostal@redhat.com> 2.9.7-1
+- fix errata import error if severity is 'None'
+
 * Mon Apr 30 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.6-1
 - remove traniling newlien at EOF
 

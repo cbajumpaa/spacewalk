@@ -1,4 +1,4 @@
-%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8 || 0%{?mageia}
 %global build_py3   1
 %global default_py3 1
 %endif
@@ -10,7 +10,7 @@
 %define pythonX %{?default_py3: python3}%{!?default_py3: python2}
 
 Name:		spacewalk-oscap
-Version:	2.9.0
+Version:	2.9.4
 Release:	1%{?dist}
 Summary:	OpenSCAP plug-in for rhn-check
 
@@ -18,8 +18,12 @@ License:	GPLv2
 URL:		https://github.com/spacewalkproject/spacewalk
 Source0:	https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
 BuildArch:	noarch
-BuildRequires:  libxslt
-%if 0%{?rhel}
+%if 0%{?mageia}
+BuildRequires: xsltproc
+%else
+BuildRequires: libxslt
+%endif
+%if 0%{?rhel} && 0%{?rhel} < 8
 Requires: openscap-utils
 %else
 Requires:	openscap-scanner
@@ -113,6 +117,19 @@ make -f Makefile.spacewalk-oscap install PREFIX=$RPM_BUILD_ROOT PYTHONPATH=%{pyt
 %endif
 
 %changelog
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.4-1
+- use python3 on mageia
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.3-1
+- xsltproc is in independent package in mageia
+
+* Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.2-1
+- fix build on mageia
+
+* Thu May 10 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.1-1
+- require openscap-scanner on newer versions of RHEL
+- Bumping package versions for 2.9.
+
 * Tue Mar 20 2018 Tomas Kasparek <tkasparek@redhat.com> 2.8.8-1
 - don't build python2 subpackages on systems with default python3
 

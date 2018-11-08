@@ -15,7 +15,7 @@ Name:          rhnpush
 Summary:       Package uploader for the Spacewalk or Red Hat Satellite Server
 License:       GPLv2
 URL:           https://github.com/spacewalkproject/spacewalk
-Version:       5.5.114
+Version:       5.5.115
 Release:       1%{?dist}
 Source0:       https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
 BuildArch:     noarch
@@ -91,7 +91,7 @@ make -f Makefile.rhnpush install PREFIX=$RPM_BUILD_ROOT ROOT=%{python_sitelib} \
 %endif
 
 %if 0%{?build_py3}
-sed -i 's|#!/usr/bin/python|#!/usr/bin/python3|' rhnpush
+sed -i 's|#!/usr/bin/python2|#!/usr/bin/python3|' rhnpush
 install -d $RPM_BUILD_ROOT/%{python3_sitelib}
 make -f Makefile.rhnpush install PREFIX=$RPM_BUILD_ROOT ROOT=%{python3_sitelib} \
     MANDIR=%{_mandir} PYTHON_VERSION=%{python3_version}
@@ -135,6 +135,12 @@ spacewalk-python3-pylint $RPM_BUILD_ROOT%{_bindir} $RPM_BUILD_ROOT%{python3_site
 %endif
 
 %changelog
+* Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 5.5.115-1
+- let filehandles be closed automatically
+- fixed pylint errors
+- fixed pylint error inconsistent-return-statements
+- use explicit version of python
+
 * Tue Apr 03 2018 Tomas Kasparek <tkasparek@redhat.com> 5.5.114-1
 - rhnpush is needed on python2 due to spacewalk-proxy
 
