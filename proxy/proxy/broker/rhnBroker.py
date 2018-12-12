@@ -1,6 +1,6 @@
 # Spacewalk Proxy Server Broker handler code.
 #
-# Copyright (c) 2008--2017 Red Hat, Inc.
+# Copyright (c) 2008--2018 Red Hat, Inc.
 #
 # This software is licensed to you under the GNU General Public License,
 # version 2 (GPLv2). There is NO WARRANTY for this software, express or
@@ -486,7 +486,7 @@ class BrokerHandler(SharedHandler):
             log_debug(3, "Client server ID not found in headers")
             # XXX: no client server ID in headers, should we care?
             #raise rhnFault(1000, _("Client Server ID not found in headers!"))
-            return
+            return None
         serverId = 'X-RHN-Server-ID'
 
         self.clientServerId = headers[serverId]

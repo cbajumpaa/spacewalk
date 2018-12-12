@@ -3,18 +3,14 @@
 %global rhnconf %{_sysconfdir}/rhn
 %global m2crypto m2crypto
 
-%if 0%{?rhel} && 0%{?rhel} < 6
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print get_python_lib()")}
-%endif
-
-%if 0%{?fedora} >= 23 || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8
+%if 0%{?fedora} || 0%{?suse_version} > 1320 || 0%{?rhel} >= 8
 %{!?python3_sitelib: %global python3_sitelib %(%{__python3} -c "from distutils.sysconfig import get_python_lib; print(get_python_lib())")}
 %global python3rhnroot %{python3_sitelib}/spacewalk
 %global build_py3 1
 %endif
 
-%if 0%{?fedora} || 0%{?rhel} >= 7
-%{!?pylint_check: %global pylint_check 1}
+%if (0%{?fedora} && 0%{?fedora} <= 29) || 0%{?rhel} >= 7
+%{!?pylint2_check: %global pylint2_check 1}
 %endif
 
 %if 0%{?fedora} || 0%{?rhel}
@@ -46,7 +42,7 @@
 Name: spacewalk-backend
 Summary: Common programs needed to be installed on the Spacewalk servers/proxies
 License: GPLv2
-Version: 2.9.27
+Version: 2.10.1
 Release: 1%{?dist}
 URL:       https://github.com/spacewalkproject/spacewalk
 Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -58,10 +54,10 @@ Requires: rhnlib >= 2.5.74
 # for Debian support
 Requires: %{python_prefix}-debian
 Requires: %{name}-libs >= 1.1.16-1
-%if 0%{?rhel} > 5
+%if 0%{?rhel}
 Requires: pyliblzma
 %endif
-%if 0%{?pylint_check}
+%if 0%{?pylint2_check}
 BuildRequires: spacewalk-python2-pylint
 %endif
 BuildRequires: /usr/bin/msgfmt
@@ -69,7 +65,7 @@ BuildRequires: /usr/bin/docbook2man
 BuildRequires: docbook-utils
 BuildRequires: python2
 BuildRequires: python2-spacewalk-usix
-%if 0%{?fedora} || 0%{?rhel} > 5 || 0%{?suse_version} > 1310
+%if 0%{?fedora} || 0%{?rhel} || 0%{?suse_version} > 1310
 BuildRequires: rhnlib >= 2.5.74
 BuildRequires: python2-rhn-client-tools
 BuildRequires: rpm-python
@@ -319,7 +315,7 @@ Requires: rhnlib  >= 2.5.57
 Requires: python2-spacewalk-usix
 Requires: python-requests
 Requires: %{m2crypto}
-%if 0%{?fedora} || 0%{?rhel} > 5
+%if 0%{?fedora} || 0%{?rhel}
 BuildRequires: python-requests
 %endif
 Obsoletes: rhns-satellite-tools < 5.3.0
@@ -398,7 +394,7 @@ popd
 cp %{pythonrhnroot}/common/usix.py $RPM_BUILD_ROOT%{pythonrhnroot}/common
 make -f Makefile.backend PYTHONPATH=$RPM_BUILD_ROOT%{python_sitelib} test || :
 
-%if 0%{?pylint_check}
+%if 0%{?pylint2_check}
 # check coding style
 export PYTHONPATH=$RPM_BUILD_ROOT%{python_sitelib}:/usr/lib/rhn:/usr/share/rhn
 spacewalk-python2-pylint $RPM_BUILD_ROOT%{pythonrhnroot}/common \
@@ -798,6 +794,31 @@ rm -f %{rhnconf}/rhnSecret.py*
 %endif
 
 %changelog
+* Wed Dec 12 2018 Michael Mraka <michael.mraka@redhat.com> 2.10.1-1
+- group virtualization types together
+- group products together to make list smaller
+- 1651354 - recognize RHV 4.x guests as virtual
+
+* Fri Nov 23 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.33-1
+- fixing newline error in translation
+
+* Fri Nov 23 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.32-1
+- updated copyright years
+- Regenerating .po and .pot files for spacewalk-backend
+- Updating .po translations from Zanata
+
+* Fri Nov 23 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.31-1
+- use http if proxy does not specify protocol
+- Fixed section lookup bug related to processing data from /etc/rhn/spacewalk-
+  repo-sync/yum.conf
+
+* Fri Nov 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.30-1
+- run pylint2 on only on Fedora <= 29
+- removed unused conditions from spec
+
+* Mon Nov 12 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.29-1
+- fixed pylint errors
+
 * Fri Nov 02 2018 Tomas Kasparek <tkasparek@redhat.com> 2.9.27-1
 - Changed 'cp' parameters to work with the symlinks files.
 

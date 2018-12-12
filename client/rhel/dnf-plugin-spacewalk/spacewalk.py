@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2015  Red Hat, Inc.
+# Copyright (c) 2015--2018  Red Hat, Inc.
 #
 # This copyrighted material is made available to anyone wishing to use,
 # modify, copy, or redistribute it subject to the terms and conditions of
@@ -242,11 +242,11 @@ class  SpacewalkRepo(dnf.repo.Repo):
         else:
             self.disable()
 
-        if hasattr(self, '_repo'):
-            # dnf > 3.6.0
+        if hasattr(self, 'set_http_headers'):
+            # dnf > 4.0.9  on RHEL 8, Fedora 29/30
             http_headers = self.create_http_headers()
             if http_headers:
-                self._repo.setHttpHeaders(http_headers)
+                self.set_http_headers(http_headers)
 
     def create_http_headers(self):
         http_headers = []

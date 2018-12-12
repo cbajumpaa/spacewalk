@@ -1,8 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 #
 # Clonse channels by a particular date
 #
-# Copyright (c) 2008--2017 Red Hat, Inc.
+# Copyright (c) 2008--2018 Red Hat, Inc.
 #
 #
 # This software is licensed to you under the GNU General Public License,
@@ -101,6 +101,7 @@ def create_repodata_link(src_path, dst_path):
 def remove_repodata_link(link_path):
     if os.path.exists(link_path):
         return os.unlink(link_path)
+    return None
 
 
 def diff_packages(old, new):
@@ -359,6 +360,7 @@ class ChannelTreeCloner:
         for cloner in self.cloners:
             if cloner.src_label() == src_label:
                 return cloner
+        return None
 
     def create_channels(self, skip_depsolve=False):
         to_create = self.needing_create()

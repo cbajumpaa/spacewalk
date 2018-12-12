@@ -43,7 +43,7 @@
 
 Summary: Support programs and libraries for Red Hat Satellite or Spacewalk
 Name: rhn-client-tools
-Version: 2.9.27
+Version: 2.10.0
 Release: 1%{?dist}
 %if %{_vendor} == "debbuild"
 Group:      admin
@@ -167,14 +167,17 @@ Requires: dbus-python
 
 %if 0%{?py3_deps}
 Requires: python2-rpm
-Requires: python2-dmidecode
-Requires: python2-ethtool >= 0.4
 BuildRequires: python2-devel
-Requires: python2-hwdata
 BuildRequires: python2-rpm
 %if 0%{?mageia}
+Requires: python-dmidecode
+Requires: python-ethtool >= 0.4
+Requires: python-hwdata
 BuildRequires: python-coverage
 %else
+Requires: python2-dmidecode
+Requires: python2-ethtool >= 0.4
+Requires: python2-hwdata
 BuildRequires: python2-coverage
 %endif
 %else
@@ -229,9 +232,14 @@ Requires: python3-pyudev
 %else
 Requires: libgudev
 Requires: python3-dbus
+%if 0%{?mageia}
+Requires: python3-newt
+Requires: python3-gobject3
+%else
 Requires: newt-python3
 Requires: python3-gobject-base
-%endif
+%endif # 0%{?mageia}
+%endif # 0%{?suse_version} >= 1140
 BuildRequires: python3-devel
 %endif
 
@@ -501,7 +509,7 @@ sed -i 's|#!/usr/bin/python2|#!/usr/bin/python3|' src/actions/*.py src/bin/*.py 
 make -f Makefile.rhn-client-tools %{?is_deb:PLATFORM=deb}
 for g in data/*.glade ; do
         mv $g $g.old
-        gtk-builder-convert $g.old $g
+        python2 /usr/bin/gtk-builder-convert $g.old $g
 done
 sed -i 's/GTK_PROGRESS_LEFT_TO_RIGHT/horizontal/' data/progress.glade
 sed -i 's/GtkComboBox/GtkComboBoxText/; /property name="has_separator"/ d;' data/rh_register.glade
@@ -970,6 +978,20 @@ py3clean -p python3-rhn-setup-gnome
 
 
 %changelog
+* Fri Nov 23 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.33-1
+- updated copyright years
+- Regenerating .po and .pot files for rhn-client-tools
+- Updating .po translations from Zanata
+
+* Fri Nov 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.32-1
+- fix deps on mageia
+
+* Fri Nov 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.30-1
+- use python2 for converting glade xml
+
+* Fri Nov 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.29-1
+- fix deps on mageia
+
 * Tue Nov 06 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.27-1
 - 1646929 - convert values from bytes to string in py3
 

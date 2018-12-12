@@ -163,6 +163,7 @@ def do_system_list(self, args, doreturn=False):
     else:
         if self.get_system_names():
             print('\n'.join(sorted(['%s : %s' % (v, k) for k, v in self.get_system_names_ids().iteritems()])))
+    return None
 
 ####################
 
@@ -203,7 +204,7 @@ def do_system_reboot(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -252,7 +253,7 @@ def do_system_search(self, args, doreturn=False):
 
     if len(args) != 1:
         self.help_system_search()
-        return
+        return []
 
     query = args[0]
 
@@ -326,6 +327,7 @@ def do_system_search(self, args, doreturn=False):
                 else:
                     print('%s  %s' % (s[0].ljust(max_size),
                                       str(s[1]).strip()))
+    return []
 
 ####################
 
@@ -679,7 +681,7 @@ def complete_system_installpackage(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(parts) > 2:
         return tab_completer(self.get_package_names(), text)
-
+    return None
 
 def do_system_installpackage(self, args):
     arg_parser = get_argument_parser()
@@ -694,7 +696,7 @@ def do_system_installpackage(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -828,7 +830,7 @@ def complete_system_removepackage(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(parts) > 2:
         return tab_completer(self.get_package_names(), text)
-
+    return None
 
 def do_system_removepackage(self, args):
     arg_parser = get_argument_parser()
@@ -843,7 +845,7 @@ def do_system_removepackage(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -949,6 +951,7 @@ def complete_system_upgradepackage(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(parts) > 2:
         return tab_completer(self.get_package_names(), text)
+    return None
 
 
 def do_system_upgradepackage(self, args):
@@ -963,7 +966,7 @@ def do_system_upgradepackage(self, args):
 
     if len(args) < 2:
         self.help_system_upgradepackage()
-        return
+        return None
 
     # install and upgrade for individual packages are the same
     if not '.*' in args[1:]:
@@ -972,7 +975,7 @@ def do_system_upgradepackage(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -1008,7 +1011,7 @@ def do_system_upgradepackage(self, args):
             logging.warning('No upgrades available for %s' % system)
 
     if not jobs:
-        return
+        return None
 
     add_separator = False
 
@@ -1036,7 +1039,7 @@ def do_system_upgradepackage(self, args):
     print('Start Time: %s' % options.start_time)
 
     if not self.user_confirm('Upgrade these packages [y/N]:'):
-        return
+        return None
 
     scheduled = 0
     for system in jobs:
@@ -1053,6 +1056,7 @@ def do_system_upgradepackage(self, args):
             logging.error('Failed to schedule %s' % system)
 
     logging.info('Scheduled %i system(s)' % scheduled)
+    return None
 
 ####################
 
@@ -1496,6 +1500,7 @@ def complete_system_addconfigchannels(self, text, line, beg, end):
     elif len(parts) > 2:
         return tab_completer(self.do_configchannel_list('', True),
                              text)
+    return None
 
 
 def do_system_addconfigchannels(self, args):
@@ -1555,6 +1560,7 @@ def complete_system_removeconfigchannels(self, text, line, beg, end):
     elif len(parts) > 2:
         return tab_completer(self.do_configchannel_list('', True),
                              text)
+    return None
 
 
 def do_system_removeconfigchannels(self, args):
@@ -1669,7 +1675,7 @@ def do_system_deployconfigfiles(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -1860,6 +1866,7 @@ def help_system_rename(self):
 def complete_system_rename(self, text, line, beg, end):
     if len(line.split(' ')) == 2:
         return tab_completer(self.get_system_names(), text)
+    return None
 
 
 def do_system_rename(self, args):
@@ -1962,6 +1969,7 @@ def complete_system_addcustomvalue(self, text, line, beg, end):
         return tab_completer(self.do_custominfo_listkeys('', True), text)
     elif len(parts) >= 4:
         return self.tab_complete_systems(text)
+    return None
 
 
 def do_system_addcustomvalue(self, args):
@@ -2011,6 +2019,7 @@ def complete_system_updatecustomvalue(self, text, line, beg, end):
         return tab_completer(self.do_custominfo_listkeys('', True), text)
     elif len(parts) >= 4:
         return self.tab_complete_systems(text)
+    return None
 
 
 def do_system_updatecustomvalue(self, args):
@@ -2020,7 +2029,7 @@ def do_system_updatecustomvalue(self, args):
 
     if len(args) < 3:
         self.help_system_updatecustomvalue()
-        return
+        return None
 
     return self.do_system_addcustomvalue(args)
 
@@ -2042,6 +2051,7 @@ def complete_system_removecustomvalues(self, text, line, beg, end):
     elif len(parts) == 3:
         return tab_completer(self.do_custominfo_listkeys('', True),
                              text)
+    return None
 
 
 def do_system_removecustomvalues(self, args):
@@ -2098,7 +2108,7 @@ def do_system_addnote(self, args):
 
     (args, options) = parse_command_arguments(args, arg_parser)
 
-    if len(args) < 1:
+    if not args:
         self.help_system_addnote()
         return
 
@@ -2252,6 +2262,7 @@ def complete_system_setbasechannel(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(line.split(' ')) == 3:
         return tab_completer(self.list_base_channels(), text)
+    return None
 
 
 def do_system_setbasechannel(self, args):
@@ -2416,6 +2427,7 @@ def complete_system_addchildchannels(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(parts) > 2:
         return tab_completer(self.list_child_channels(), text)
+    return None
 
 
 def do_system_addchildchannels(self, args):
@@ -2583,6 +2595,7 @@ def complete_system_removechildchannels(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(parts) > 2:
         return tab_completer(self.list_child_channels(), text)
+    return None
 
 
 def do_system_removechildchannels(self, args):
@@ -2799,6 +2812,7 @@ def complete_system_applyerrata(self, text, line, beg, end):
         return self.tab_complete_systems(text)
     elif len(parts) > 2:
         return self.tab_complete_errata(text)
+    return None
 
 
 def do_system_applyerrata(self, args):
@@ -2812,7 +2826,7 @@ def do_system_applyerrata(self, args):
 
     if len(args) < 2:
         self.help_system_applyerrata()
-        return
+        return None
 
     # use the systems applyed in the SSM
     if re.match('ssm', args[0], re.I):
@@ -2825,7 +2839,7 @@ def do_system_applyerrata(self, args):
     errata_list = self.expand_errata(args)
 
     if not errata_list or not systems:
-        return
+        return None
 
     # reconstruct options so we can pass them to do_errata_apply
     opts = []
@@ -3050,6 +3064,7 @@ def do_system_listpackageprofiles(self, args, doreturn=False):
     else:
         if profiles:
             print('\n'.join(sorted(profiles)))
+    return None
 
 ####################
 
@@ -3067,6 +3082,7 @@ def complete_system_deletepackageprofile(self, text, line, beg, end):
     if len(parts) == 2:
         return self.tab_complete_systems(
             self.do_system_listpackageprofiles('', True), text)
+    return None
 
 
 def do_system_deletepackageprofile(self, args):
@@ -3113,6 +3129,7 @@ def complete_system_createpackageprofile(self, text, line, beg, end):
 
     if len(parts) == 2:
         return self.tab_complete_systems(text)
+    return None
 
 
 def do_system_createpackageprofile(self, args):
@@ -3169,6 +3186,7 @@ def complete_system_comparepackageprofile(self, text, line, beg, end):
     elif len(parts) > 2:
         return self.tab_complete_systems(
             self.do_system_listpackageprofiles('', True), parts[-1])
+    return None
 
 
 def do_system_comparepackageprofile(self, args):
@@ -3275,7 +3293,7 @@ def do_system_syncpackages(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -3576,7 +3594,7 @@ def do_system_schedulehardwarerefresh(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:
@@ -3632,7 +3650,7 @@ def do_system_schedulepackagerefresh(self, args):
     # get the start time option
     # skip the prompt if we are running with --yes
     # use "now" if no start time was given
-    if is_interactive(options) and self.options.yes != True:
+    if is_interactive(options) and not self.options.yes:
         options.start_time = prompt_user('Start Time [now]:')
         options.start_time = parse_time_input(options.start_time)
     else:

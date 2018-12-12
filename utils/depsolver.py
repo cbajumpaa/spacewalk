@@ -1,8 +1,8 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 #
 # -*- coding: utf-8 -*-
 #
-# Copyright (c) 2012--2017 Red Hat, Inc.
+# Copyright (c) 2012--2018 Red Hat, Inc.
 #
 # Lookup package dependencies in a yum repository
 #

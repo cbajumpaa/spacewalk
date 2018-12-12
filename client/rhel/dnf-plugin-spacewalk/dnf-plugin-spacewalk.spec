@@ -11,7 +11,7 @@
 
 Summary: DNF plugin for Spacewalk
 Name: dnf-plugin-spacewalk
-Version: 2.9.5
+Version: 2.10.1
 Release: 1%{?dist}
 License: GPLv2
 Source0: https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
@@ -24,9 +24,11 @@ Requires: dnf-plugins-core
 Requires: librepo >= 1.7.15
 %if 0%{?fedora}
 Obsoletes: yum-rhn-plugin < 2.7
+Requires: dnf >= 4.0.9
 %endif
 %if 0%{?rhel} >= 8
 Provides: yum-rhn-plugin = %{version}
+Requires: dnf >= 4.0.9
 %endif
 
 %description
@@ -111,6 +113,13 @@ install -m 644 actions/errata.py %{buildroot}%{python3_sitelib}/rhn/actions/
 %endif
 
 %changelog
+* Mon Dec 10 2018 Michael Mraka <michael.mraka@redhat.com> 2.10.1-1
+- 1637980 - use new api for http headers
+- Bumping package versions for 2.10
+
+* Fri Nov 23 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.6-1
+- updated copyright years
+
 * Fri Oct 19 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.5-1
 - librepo dependency is not added automatically
 

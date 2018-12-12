@@ -39,7 +39,7 @@
 
 Name:		tanukiwrapper
 Version:	3.2.3
-Release:	20%{?dist}
+Release:	21%{?dist}
 Summary:	Java Service Wrapper
 Epoch:		0
 License:	BSD
@@ -56,6 +56,9 @@ Patch6:		%{name}-nosun-jvm-64.patch
 Patch7:     %{name}-compilewithfpic.patch
 Patch8:         %{name}-Makefile-linux-arm-32.patch
 Patch9:         %{name}-gcc711.patch
+%if 0%{?fedora} >= 29
+BuildRequires: gcc
+%endif
 %if 0%{?fedora} >= 20 || 0%{?rhel} >= 7
 BuildRequires: javapackages-tools
 Requires:      javapackages-tools
@@ -218,6 +221,9 @@ fi
 %endif
 
 %changelog
+* Tue Nov 13 2018 Michael Mraka <michael.mraka@redhat.com> 3.2.3-21
+- gcc is not in default buildroot anymore
+
 * Fri Feb 09 2018 Michael Mraka <michael.mraka@redhat.com> 3.2.3-20
 - removed %%%%defattr from specfile
 - removed Group from specfile

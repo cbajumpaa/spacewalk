@@ -1,10 +1,11 @@
-%if 0%{?fedora} || 0%{?rhel} >= 7
-%{!?pylint_check: %global pylint_check 1}
+%if (0%{?fedora} && 0%{?fedora} <= 29) || 0%{?rhel} >= 7
+%{!?pylint2_check: %global pylint2_check 1}
 %endif
 
 %if 0%{?fedora} || 0%{?rhel} >= 8
 %global build_py3   1
 %global default_py3 1
+%{!?pylint3_check: %global pylint3_check 1}
 %endif
 
 %global build_py2   1
@@ -15,19 +16,17 @@ Name:          rhnpush
 Summary:       Package uploader for the Spacewalk or Red Hat Satellite Server
 License:       GPLv2
 URL:           https://github.com/spacewalkproject/spacewalk
-Version:       5.5.115
+Version:       5.5.117
 Release:       1%{?dist}
 Source0:       https://github.com/spacewalkproject/spacewalk/archive/%{name}-%{version}.tar.gz
 BuildArch:     noarch
 Requires:      %{pythonX}-%{name} = %{version}-%{release}
 BuildRequires: docbook-utils, gettext
-%if 0%{?pylint_check}
-%if 0%{?build_py2}
+%if 0%{?build_py2} && 0%{?pylint2_check}
 BuildRequires:  spacewalk-python2-pylint
 %endif
-%if 0%{?build_py3}
+%if 0%{?build_py3} && 0%{?pylint3_check}
 BuildRequires:  spacewalk-python3-pylint
-%endif
 %endif
 
 %description
@@ -103,16 +102,14 @@ ln -s rhnpush%{default_suffix} $RPM_BUILD_ROOT%{_bindir}/rhnpush
 %clean
 
 %check
-%if 0%{?pylint_check}
 # check coding style
-%if 0%{?build_py2}
+%if 0%{?build_py2} && 0%{?pylint2_check}
 export PYTHONPATH=$RPM_BUILD_ROOT%{python_sitelib}
 spacewalk-python2-pylint $RPM_BUILD_ROOT%{_bindir} $RPM_BUILD_ROOT%{python_sitelib}
 %endif
-%if 0%{?build_py3}
+%if 0%{?build_py3} && 0%{?pylint3_check}
 export PYTHONPATH=$RPM_BUILD_ROOT%{python3_sitelib}
 spacewalk-python3-pylint $RPM_BUILD_ROOT%{_bindir} $RPM_BUILD_ROOT%{python3_sitelib}
-%endif
 %endif
 
 %files
@@ -135,6 +132,12 @@ spacewalk-python3-pylint $RPM_BUILD_ROOT%{_bindir} $RPM_BUILD_ROOT%{python3_site
 %endif
 
 %changelog
+* Fri Nov 23 2018 Michael Mraka <michael.mraka@redhat.com> 5.5.117-1
+- updated copyright years
+
+* Fri Nov 16 2018 Michael Mraka <michael.mraka@redhat.com> 5.5.116-1
+- run pylint2 on only on Fedora <= 29
+
 * Tue Oct 02 2018 Michael Mraka <michael.mraka@redhat.com> 5.5.115-1
 - let filehandles be closed automatically
 - fixed pylint errors

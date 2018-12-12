@@ -1,5 +1,5 @@
 Name:		spacewalk-python2-pylint
-Version:	2.9.1
+Version:	2.10.0
 Release:	1%{?dist}
 Summary:	Pylint configuration for python2 spacewalk python packages
 
@@ -19,7 +19,11 @@ Requires:	python2-pylint < 1.0
 %endif
 BuildRequires:	asciidoc
 %if 0%{?mageia}
-BuildRequires:	lib64xslt1
+%if %{_arch} == x86_64
+BuildRequires: lib64xslt1
+%else
+BuildRequires: libxslt1
+%endif
 %else
 BuildRequires:	libxslt
 %endif
@@ -72,6 +76,9 @@ rm -rf %{buildroot}
 %doc LICENSE
 
 %changelog
+* Fri Nov 16 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.3-1
+- fix build on mageia i586
+
 * Wed Oct 03 2018 Michael Mraka <michael.mraka@redhat.com> 2.9.1-1
 - fix build on mageia
 - Bumping package versions for 2.9.
